@@ -48,8 +48,8 @@ demandez le moi par mail.
 6. Ouvrez ce fichier avec un éditeur de texte normal et remplissez le comme-ceci:
     ```json
     {
-        'host': '{adresse ip}',
-        'port': '{port}'
+        "host": "{adresse ip}",
+        "port": "{port}"
     }
     ```
     Notez bien les guillements qui sont importants et remplacez {adresse ip} par celle qui vous avez noté  
@@ -103,7 +103,8 @@ After you have written down the ip adress and made sure the ProPresenter compute
 network, go in the file pp7_client/info.json and add this line
 ```json
 {
-  "url": "http://{ip adress}:{port}/v1/"
+    "host": "{adresse ip}",
+    "port": "{port}"
 }
 ```
 Replace  {ip adress} by the ip adress of the machine on which ProPresenter is running and {port} by the port number 
