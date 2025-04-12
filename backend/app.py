@@ -1,11 +1,16 @@
 from flask import Flask, render_template, request, jsonify, Response, stream_with_context
 from pp7_api import stage, stream, timer, subtitle
-import time
+import json
 
-stage = stage.Stage()
-stream = stream.Stream()
-timer = timer.Timer()
-subtitle = subtitle.Subtitle()
+with open('info.json', 'r') as config_file:
+    config = json.load(config_file)
+    host = config["host"]
+    port = config["port"]
+
+stage = stage.Stage(host, port)
+stream = stream.Stream(host, port)
+timer = timer.Timer(host, port)
+subtitle = subtitle.Subtitle(host, port)
 
 app = Flask(__name__)
 

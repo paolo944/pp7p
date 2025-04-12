@@ -2,11 +2,9 @@ import json
 import socket
 
 class Timer:
-    def __init__(self):
-        with open('info.json', 'r') as config_file:
-            config = json.load(config_file)
-            self.host = config["host"]
-            self.port = config["port"]
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
                     
     def play(self, uuid):
         msg = json.dumps({"url": f"v1/timer/{uuid}/start", "method": "GET"}, separetors=(',', ':'))

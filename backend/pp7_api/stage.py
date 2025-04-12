@@ -2,11 +2,9 @@ import json
 import socket
 
 class Stage:
-    def __init__(self):
-        with open('info.json', 'r') as config_file:
-            config = json.load(config_file)
-            self.host = config["host"]
-            self.port = config["port"]
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
 
     def send_msg(self, msg):
         if not isinstance(msg, str):
