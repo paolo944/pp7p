@@ -1,4 +1,4 @@
-# PP7P
+# PP7+
 
 C'est un client, une sur-couche logiciel pour [ProPresenter 7](https://renewedvision.com/propresenter)
 Il permet d'avoir des fonctionnalités en plus en utilisant l'api officielle de
@@ -16,46 +16,135 @@ pp7. Parmi ces fonctionnalités il y a:
 ## Installation de l'application
 
 Voici un simple tuto pour installer l'application et la lancer sur votre machine.
-Le Tuto est valable uniquement pour MacOS, pour un tuto sur un autre OS,
+Le Tuto est valable uniquement pour MacOS et linux, pour un tuto sur un autre OS,
 demandez le moi par mail.
 
-1. Installer Nginx
-    sur MacOS, pour ce faire, vous aurez besoin d'avoir [homebrew](https://brew.sh/)
-    d'installé sur votre machine. Une fois homebrew installé, entrez cette 
-    commande dans le terminal:  
-    `brew install nginx`
-2. Ouvrez un terminal et tapez cette commande pour récupérer l'application sur
+1. Ouvrez un terminal et tapez cette commande pour récupérer l'application sur
     github:  
-    `git clone https://github.com/paolo944/pp7p.git`
-3. Une fois téléchargé, allez dans le dossier de l'application avec la commande suivante:  
-    `cd pp7p`
-4. Copiez le fichier de configuration de nginx dans son dossier:  
-    `sudo cp ./proxy/pp7p.conf /usr/local/etc/nginx/servers/pp7p.conf`
-5. Ensuite, installez les dépendances de l'application avec cette commande tout
+    ```bash
+    git clone https://github.com/paolo944/pp7p.git
+    ```
+2. Une fois téléchargé, allez dans le dossier de l'application avec la commande suivante:  
+    ```bash
+    cd pp7p
+    ```
+3. Il faut créer un environement pour simplifier l'installation avec cette commande:  
+    ```bash
+    python3 -m venv env && source env/bin/activate
+    ```
+4. Ensuite, installez les dépendances de l'application avec cette commande tout
     en restant dans le dossier de l'application:  
-    `cd backend && pip3 install -r requirements.txt`
-6. Vous pourrez finalement lancer l'application avec cette commande:  
-    `python3 app.py`
-7. Pour lancer nginx à chaque fois automatiquement à chaque démarrage de l'ordinateur
-    tapez cette commande dans votre terminal:  
-    `brew services start nginx`
+    ```bash
+    pip3 install -r requirements.txt
+    ```
+5. Allez dans les paramètres de l'application ProPresenter dans la rubrique réseaux/network  
+    Activez l'option ??, une adresse ip apparaîtra et vous pouvez choisir un numéro de port.  
+    Choissisez un numéro de port entre 40000 et 65000 pour éviter d'avoir des erreurs.  
+    Notez l'adresse ip, qui est de la forme: 192.168.0.0 et le port.  
+    utilisez la commande suivante dans votre terminal pour créer le fichier de configuration:  
+    ```bash
+    touch info.json
+    ```
+6. Ouvrez ce fichier avec un éditeur de texte normal et remplissez le comme-ceci:
+    ```json
+    {
+        'host': '{adresse ip}',
+        'port': '{port}'
+    }
+    ```
+    Notez bien les guillements qui sont importants et remplacez {adresse ip} par celle qui vous avez noté  
+    et {port} par celui que vous avez noté.
+5. Vous pourrez finalement lancer l'application avec cette commande:  
+    ```bash
+    python3 app.py
+    ```
 
 ## Bug report
 
 Si vous rencontrez un bug ou quelconque souci, vous pouvez me contacter sur
 mon adresse mail: [paul@mekhail.dev](mailto:paul@mekhail.dev).
 
-## Anciennes versions
+# For Others
 
-Vous pouvez également consulter en ligne le code d'autres versions de test.
+# Web client for ProPresenter
 
-[PP7P C version](https://github.com/paolo944/pp7p_c_version) est une version
-écrite totalement en C sans dépedances autre que les libraires du système.
-Elle est faite pour être rapide, sans grosse utilisation de la mémoire et sans
-dépendances tel que nginx ou python. Elle a été abandonné pour le coût du
-developpement d'un application pareil en bas niveau. Cependant elle fonctionne
-mais il lui manque encore quelques fonctionnalités.  
+Web client for ProPresenter 7 with important informations like clock and Stage live messages.
 
-[PP7 Client v1](https://github.com/paolo944/pp7_client) est la première version
-écrite pour ce projet, elle fonctionne bien sur la plupart des systèmes. Elle utilise
-un système de serveur écrit en python avec la libraire Flask.
+To run the web app, the server (this app) must be running on the same network as the ProPresenter app.
+The server is not required to be on the same machin as the ProPresenter app.
+
+## ⚠️ **IMPORTANT: PLEASE READ CAREFULLY** ⚠️
+This app is still under developpement and can very likely crash.
+Please don't use it in critical situations. Only in training and
+just for testing for now.
+If you have any question ou improvemnts, feel free to sumbit
+an issue on github or a pull request and i will to try to
+answer fastly or review your pull requests.
+
+## Requirements
+- python3
+- pip3
+- git
+
+## Installation
+Open a terminal and run the following commands
+```bash
+git clone https://github.com/paolo944/pp7_client.git
+cd pp7_client
+pip3 install -r requirements.txt
+```
+## Configuration
+You have to first enable network on ProPresenter by going into Settings->Network then Enable Network.
+The ip adress should appear should under. Write down also the port number of the ProPresenter app.
+Make sure that your machine is visible on your local network, so that other clients like your phone or the server
+if it's not on the same machine as the ProPresenter app could communicate with it's API.
+
+After you have written down the ip adress and made sure the ProPresenter computer is visible on the local 
+network, go in the file pp7_client/info.json and add this line
+```json
+{
+  "url": "http://{ip adress}:{port}/v1/"
+}
+```
+Replace  {ip adress} by the ip adress of the machine on which ProPresenter is running and {port} by the port number 
+of ProPresenter.
+
+If the server runs on the same machien as the ProPresenter app, just replace {ip adress} by 127.0.0.1 .
+
+## Running the app
+To run the app, launch the script app.py.
+
+On Mac-GNU/Linux:
+```bash
+# Make sure to be located in the project directory
+python3 app.py
+```
+
+On Windows PowerShell:
+```
+python app.py
+```
+
+A url wil appear in the terminal, go to it on any client which is on the same network to get the main client.
+
+If you want the subtitles page which updates automaticly, go to the url/subtitles .
+
+The subtitles are well suited for OBS if you create a scene using a web brower.
+
+## ⚠️ **DISCLAIMER** ⚠️
+The subtitles format is suited for my church's specific formats, so will very probably have to adapt it to your format.
+
+## Older test versions
+
+You can also look at other versions that I tried making
+
+[PP7P C version](https://github.com/paolo944/pp7p_c_version) is a version completely
+written in C without any dependencies other than POSIX.
+It was meant to be fast and light. I abandonned this version because it took too much
+time to develop and was a little unecessary. It would be useful if you want to run it
+on something like raspberry pi pico, eventhough you would need to adapt it to the raspberry's lib
+It works well but lacks some functionnalities like SSE management.  
+
+[PP7 Client v1](https://github.com/paolo944/pp7_client) It was the first version and is
+very similar to this one, but it uses http to communicate with the propresenter api instead
+of just tcp/ip and doesn't manage SSE clients as good as this one.
