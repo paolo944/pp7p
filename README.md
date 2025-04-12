@@ -149,3 +149,8 @@ It works well but lacks some functionnalities like SSE management.
 [PP7 Client v1](https://github.com/paolo944/pp7_client) It was the first version and is
 very similar to this one, but it uses http to communicate with the propresenter api instead
 of just tcp/ip and doesn't manage SSE clients as good as this one.
+
+## Bug report
+
+If there's any issue, you can open an issue on github.  
+If needed, my email adress if: [paul@mekhail.dev](mailto:paul@mekhail.dev).
