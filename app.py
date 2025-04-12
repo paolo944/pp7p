@@ -1,6 +1,12 @@
-from flask import Flask, render_template, request, jsonify, Response, stream_with_context
-from pp7_api import stage, stream, timer, subtitle
+from flask import Flask, request, jsonify, Response, send_from_directory
+from flask_compress import Compress
+from pp7_api import stage, timer, sse_clients, dispatcher
 import json
+import requests
+import os
+
+host = ""
+port = ""
 
 with open('info.json', 'r') as config_file:
     config = json.load(config_file)
@@ -8,15 +14,32 @@ with open('info.json', 'r') as config_file:
     port = config["port"]
 
 stage = stage.Stage(host, port)
-stream = stream.Stream(host, port)
 timer = timer.Timer(host, port)
-subtitle = subtitle.Subtitle(host, port)
 
-app = Flask(__name__)
+clients = []
 
-sse_clients = {}
+def make_stream(filtre_type):
+    def event_stream():
+        client = {'filtre': filtre_type}
+        clients.append(client)
+        timer = 0
+        try:
+            while True:
+                data = dispatcher.ready_data[filtre_type]
+                if data:
+                    if data['timer/system_time'] ==  timer:
+                        yield ": ping\n\n"
+                        continue
+                yield f"data: {json.dumps(data)}\n\n"
+        except GeneratorExit:
+            clients.remove(client)  # Nettoyage lors de la fermeture de la connexion
 
-# Route pour obtenir des données de l'API
+    return Response(event_stream(), mimetype='text/event-stream')
+
+app = Flask(__name__, static_folder='public')
+Compress(app)
+PUBLIC_DIR = os.path.join(os.getcwd(), 'public')
+
 @app.route('/api/stage/msg', methods=['PUT'])
 def stage_send_msg():
     data = request.get_json()
@@ -28,10 +51,6 @@ def stage_send_msg():
 def stage_delete_msg():
     result = stage.delete_msg()
     return jsonify({'result': result})
-
-@app.route('/api/current_status_stream')
-def current_status_stream():
-    return Response(stream.stream_update(), mimetype="text/event-stream")
 
 @app.route('/api/timer/play/<string:uuid>', methods=['GET'])
 def play_timer(uuid):
@@ -84,14 +103,40 @@ def joke():
         print(f'Échec de la requête Joke. Code de statut : {response.status_code}')
         return jsonify({'result': 'False'})
 
-@app.route('/api/subtitles/update')
-def subtitle_stream():
-    return Response(subtitle.update(), mimetype='text/event-stream')
+@app.route('/api/prompt')
+def prompt_stream():
+    return make_stream('prompt')
+
+@app.route('/api/sub')
+def sub_stream():
+    return make_stream('sub')
+
+@app.route('/api/status')
+def status_stream():
+    return make_stream('status')
+
+@app.route('/', methods=['GET'])
+def serve_index():
+    response = send_from_directory(PUBLIC_DIR, 'index.html')
+    response.cache_control.max_age = 604800
+    response.cache_control.public = True
+    return response
+
+@app.route('/<path:path>', methods=['GET'])
+def serve_static(path):
+    response = send_from_directory(PUBLIC_DIR, path)
+    response.cache_control.max_age = 604800
+    response.cache_control.public = True
+    return response
 
 @app.errorhandler(400)
 def bad_request(error):
     app.logger.error(f"Bad request: {request.data}")
     return jsonify({'message': 'Bad request'}), 400
 
+app.config['COMPRESS_MIN_SIZE'] = 500
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    sse_clients.start_api_stream(host, port)
+    dispatcher.start_dispatcher()
+    app.run(host='0.0.0.0', port=5000, debug=False)

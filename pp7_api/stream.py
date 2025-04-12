@@ -3,10 +3,8 @@ import json
 from flask import jsonify
 
 class Stream:
-    def __init__(self):
-        with open('info.json', 'r') as config_file:
-            config = json.load(config_file)
-            self.url = f'{config["url"]}status/'
+    def __init__(self, host, port):
+        self.url = f'{host}:{port}/v1/status/'
 
     def stream_update(self):
         headers = {
