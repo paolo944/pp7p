@@ -44,3 +44,18 @@ demandez le moi par mail.
 
 Si vous rencontrez un bug ou quelconque souci, vous pouvez me contacter sur
 mon adresse mail: [paul@mekhail.dev](mailto:paul@mekhail.dev).
+
+## Anciennes versions
+
+Vous pouvez également consulter en ligne le code d'autres versions de test.
+
+[PP7P C version](https://github.com/paolo944/pp7p_c_version) est une version
+écrite totalement en C sans dépedances autre que les libraires du système.
+Elle est faite pour être rapide, sans grosse utilisation de la mémoire et sans
+dépendances tel que nginx ou python. Elle a été abandonné pour le coût du
+developpement d'un application pareil en bas niveau. Cependant elle fonctionne
+mais il lui manque encore quelques fonctionnalités.  
+
+[PP7 Client v1](https://github.com/paolo944/pp7_client) est la première version
+écrite pour ce projet, elle fonctionne bien sur la plupart des systèmes. Elle utilise
+un système de serveur écrit en python avec la libraire Flask.
