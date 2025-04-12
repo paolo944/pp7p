@@ -27,13 +27,13 @@ demandez le moi par mail.
 2. Ouvrez un terminal et tapez cette commande pour récupérer l'application sur
     github:  
     `git clone https://github.com/paolo944/pp7p.git`
-3. Une fois téléchargé, allez dans le dossier de l'application avec la commande:  
-    `cd ~/Téléchargement/pp7p` ou `cd ~/Download/pp7p`
+3. Une fois téléchargé, allez dans le dossier de l'application avec la commande suivante:  
+    `cd pp7p`
 4. Copiez le fichier de configuration de nginx dans son dossier:  
-    `sudo cp ./pp7p.conf /usr/local/etc/nginx/servers/pp7p.conf`
+    `sudo cp ./proxy/pp7p.conf /usr/local/etc/nginx/servers/pp7p.conf`
 5. Ensuite, installez les dépendances de l'application avec cette commande tout
     en restant dans le dossier de l'application:  
-    `pip3 install -r requirements.txt`
+    `cd backend && pip3 install -r requirements.txt`
 6. Vous pourrez finalement lancer l'application avec cette commande:  
     `python3 app.py`
 7. Pour lancer nginx à chaque fois automatiquement à chaque démarrage de l'ordinateur
