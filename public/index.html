@@ -7,7 +7,6 @@
     <link rel="icon" href="public/icon/favicon.ico">
     <link rel="stylesheet" href="public/css/style.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="public/js/scripts.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -31,16 +30,6 @@
             <h3 id="video-container"></h3>
         </div>
 
-        <div id="modify-subtitles">
-            <h3>Afficher nom et titre sur live</h3>
-            <form id="subtitle-live">
-                <input type="text" id="subtitle-nom" name="user_live-name" placeholder="Nom">
-                <input type="text" id="subtitle-title" name="user_live-title" placeholder="Titre">
-                <button type="submit" id="send">Envoyer</button>
-                <button type="submit" id="delete">Supprimer</button>
-            </form>
-        </div>
-
         <div class="form-container" id="clock-editor">
             <h2>Ajouter Clock</h2>
             <label for="clock_name">Nom</label>
@@ -55,5 +44,6 @@
         </div>
         <button type="submit" id="joke">Joke</button>
     </div>
+    <script src="/public/js/scripts.js"></script>
 </body>
 </html>

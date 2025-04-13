@@ -11,14 +11,14 @@ function removeClock(timers, id) {
     document.getElementById(id).remove();
 }
 
-document.getElementById('stage_msg').addEventListener('submit', function(event) {
+document.getElementById("stage_msg").addEventListener('submit', function(event) {
     event.preventDefault();
 
     const userInput = document.getElementById('user-stage-msg').value;
     const buttonId = event.submitter ? event.submitter.id : event.target.id;
 
     if(buttonId == "send"){
-        fetch('/stage/msg', {
+        fetch('/api/stage/msg', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ document.getElementById('stage_msg').addEventListener('submit', function(event) 
         });
     }
     else if(buttonId == "delete"){
-        fetch('/stage/msg', {
+        fetch('/api/stage/msg', {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -72,7 +72,7 @@ document.getElementById('submit-button').addEventListener('click', () => {
         seconds: seconds
     };
 
-    fetch('/timer', {
+    fetch('/api/timer', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -89,7 +89,7 @@ document.getElementById('submit-button').addEventListener('click', () => {
 });
 
 function fetchStreamData() {
-    const eventSource = new EventSource('/current_status_stream');
+    const eventSource = new EventSource('/api/status');
     const timeContainer = document.getElementById('time-container');
     const messageContainer = document.getElementById('stage-message-container');
     const clockContainer = document.getElementById('clock-container');
@@ -285,7 +285,7 @@ function fetchStreamData() {
 }
 
 function pauseTimer(uuid) {
-    fetch(`/timer/pause/${uuid}`, {
+    fetch(`/api/timer/pause/${uuid}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -301,7 +301,7 @@ function pauseTimer(uuid) {
 }
 
 function playTimer(uuid) {
-    fetch(`/timer/play/${uuid}`, {
+    fetch(`/api/timer/play/${uuid}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -317,7 +317,7 @@ function playTimer(uuid) {
 }
 
 function resetTimer(uuid) {
-    fetch(`/timer/reset/${uuid}`, {
+    fetch(`/api/timer/reset/${uuid}`, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -333,7 +333,7 @@ function resetTimer(uuid) {
 }
 
 function deleteTimer(uuid, id) {
-    fetch(`/timer/${uuid}`, {
+    fetch(`/api/timer/${uuid}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -383,7 +383,7 @@ document.getElementById('toggle-editor-mode').addEventListener('click', function
 });
 
 document.getElementById('joke').addEventListener('click', function() {
-    fetch(`/joke`, {
+    fetch(`/api/joke`, {
         method: 'GET'
     })
     .then(response => response.json())
@@ -420,54 +420,3 @@ function changeLanguageToFrench() {
     document.querySelector('label[for="seconds"]').textContent = 'Secondes:';
     document.getElementById('submit-button').textContent = 'Ajouter';
 }
-
-document.getElementById('subtitle-live').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    const user_name = document.getElementById('subtitle-nom').value;
-    const user_title = document.getElementById('subtitle-title').value;
-    const buttonId = event.submitter ? event.submitter.id : event.target.id;
-
-    if(buttonId == "send"){
-        fetch('/subtitle', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name: user_name, title: user_title })
-        })
-        .then(response => response.json())
-        .then(data => {
-            const resultContainer = document.getElementById('result-container');
-            resultContainer.innerHTML = data.result ? "" : "Erreur, message non envoyé";
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-        });
-    }
-    else if(buttonId == "delete"){
-        fetch('/subtitle', {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            const resultContainer = document.getElementById('result-container');
-            const user_name = document.getElementById('subtitle-nom');
-            const user_title = document.getElementById('subtitle-title');
-            if(data.result){
-                resultContainer.innerHTML =  '';
-                user_name.placeholder = 'Nom';
-                user_title.placeholder = 'Titre';
-            }
-            else{
-                resultContainer.innerHTML =  "Erreur, message non supprimé";
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-        });
-    }
-});

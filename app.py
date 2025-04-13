@@ -122,6 +122,20 @@ def serve_index():
     response.cache_control.public = True
     return response
 
+@app.route('/subtitles', methods=['GET'])
+def serve_sub():
+    response = send_from_directory(PUBLIC_DIR, 'subtitles.html')
+    response.cache_control.max_age = 604800
+    response.cache_control.public = True
+    return response
+
+@app.route('/prompt', methods=['GET'])
+def serve_prompt():
+    response = send_from_directory(PUBLIC_DIR, 'prompteur.html')
+    response.cache_control.max_age = 604800
+    response.cache_control.public = True
+    return response
+
 @app.route('/<path:path>', methods=['GET'])
 def serve_static(path):
     response = send_from_directory(PUBLIC_DIR, path)
