@@ -1,5 +1,6 @@
 import json
 import socket
+import sys
 
 class Stage:
     def __init__(self, host, port):
@@ -11,15 +12,26 @@ class Stage:
             print("Erreur, le message doit être une string")
             return False
 
-        msg = json.dumps({"url": "v1/stage/message", "method": "PUT", "body": msg, "chunked": False}, separetors=(',', ':'))
+        request = json.dumps({
+            "url": "v1/stage/message",
+            "method": "PUT",
+            "body": msg
+        }, separators=(',', ':')) + "\r\n"
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.host, self.port))
-                s.sendall(msg.encode('utf-8'))
+                try:
+                    s.connect((self.host, int(self.port)))
+                except Exception as e:
+                    print("Impossible de se connecter:", e)
+                    sys.exit(1)
+
+                s.send(request.encode('utf-8'))
                 response = s.recv(1024)
 
-                if response.decode('utf-8'):
+                print(f"rep: {response}")
+
+                if response.decode():
                     print(f'Échec de la requête. Réponse : {response.decode("utf-8")}')
                     return False
                 else:
@@ -30,15 +42,21 @@ class Stage:
             return False
 
     def delete_msg(self):
-        msg = json.dumps({"url": "v1/stage/message", "method": "DELETE"}, separetors=(',', ':'))
-
+        request = json.dumps({
+            "url": "v1/stage/message",
+            "method": "DELETE"
+        }, separators=(',', ':')) + "\r\n"
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((self.host, self.port))
-                s.sendall(msg.encode('utf-8'))
+                try:
+                    s.connect((self.host, int(self.port)))
+                except Exception as e:
+                    print("Impossible de se connecter:", e)
+                    sys.exit(1)
+                s.send(request.encode('utf-8'))
                 response = s.recv(1024)
 
-                if response.decode('utf-8'):
+                if response.decode():
                     print(f'Échec de la requête. Réponse : {response.decode("utf-8")}')
                     return False
                 else:

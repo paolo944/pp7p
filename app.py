@@ -11,7 +11,7 @@ port = ""
 with open('info.json', 'r') as config_file:
     config = json.load(config_file)
     host = config["host"]
-    port = config["port"]
+    port = int(config["port"])
 
 stage = stage.Stage(host, port)
 timer = timer.Timer(host, port)
@@ -44,6 +44,7 @@ PUBLIC_DIR = os.path.join(os.getcwd(), 'public')
 def stage_send_msg():
     data = request.get_json()
     msg = data.get('user_input')
+    print(msg)
     result = stage.send_msg(msg)
     return jsonify({'result': result})
 
@@ -153,4 +154,4 @@ app.config['COMPRESS_MIN_SIZE'] = 500
 if __name__ == '__main__':
     sse_clients.start_api_stream(host, port)
     dispatcher.start_dispatcher()
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=True)
