@@ -28,14 +28,12 @@ def make_stream(filtre_type):
                 dispatcher.ready_data
                 data = dispatcher.ready_data[filtre_type]
                 if data:
-                    print("data sent")
-
-                    if data['timer/system_time'] ==  timer:
+                    if data['v1/timer/system_time'] ==  timer:
                         yield ": ping\n\n"
                         continue
                     yield f"data: {json.dumps(data)}\n\n"
         except GeneratorExit:
-            clients.remove(client)  # Nettoyage lors de la fermeture de la connexion
+            clients.remove(client)
 
     return Response(event_stream(), mimetype='text/event-stream')
 
@@ -84,10 +82,6 @@ def modify_timer(uuid):
 @app.route('/api/timer', methods=['POST'])
 def post_timer():
     data = request.get_json()
-    hours = data.get('hours')
-    minutes = data.get('minutes')
-    seconds = data.get('seconds')
-    print(f"Received time: {hours}:{minutes}:{seconds}")
     result = timer.post(data)
     return jsonify({'result': result})
 

@@ -1,19 +1,33 @@
 import threading
+import json
 
 incoming_data_dict = {
-            "stage/message": "",
-            "timers/current": "",
-            "timer/video_countdown": "",
-            "timer/system_time": 0,
-            "status/slide": "",
-            "presentation/active": ""
+            "v1/stage/message": "",
+            "v1/timers/current": "",
+            "v1/timer/video_countdown": "",
+            "v1/timer/system_time": 0,
+            "v1/status/slide": "",
+            "v1/presentation/active": ""
             }
+
 ready_data = {'prompt': {}, 'sub': {}, 'status': {}}
 
+def safe_parse(data):
+    if isinstance(data, str):
+        stripped = data.strip()
+        if stripped.startswith("{") or stripped.startswith("["):
+            try:
+                return json.loads(stripped)
+            except json.JSONDecodeError:
+                print(f"[WARNING] JSON mal formé: {data}")
+                return {}
+        else:
+            return data
+    return data
+
 def process_slide(data):
-    print(data)
-    data_final = {}
     text = data["current"]["text"]
+    data_final = {}
     data_final["type"] = "versets" if any(char.isdigit() for char in text) else "louanges"
     
     if data_final["type"] == "louanges":
@@ -23,7 +37,7 @@ def process_slide(data):
         data_final["subtitle"] = paroles
     elif data_final["type"] == "versets":
         text = text.split('\r')
-        ref = text[3]
+        ref = text[-1]
         versets = text[0]
         data_final["ref"] = ref
         data_final["versets"] = versets
@@ -32,26 +46,37 @@ def process_slide(data):
     return data
 
 url_handlers = {
-    'timer/system_time': lambda data: {'prompt': data, 'sub': data, 'status': data},
-    'stage/message': lambda data: {'status': data},
-    'timer/video_countdown': lambda data: {'status': data},
-    'timers/current': lambda data: {'status': data},
-    'presentation/active': lambda data: {'status': data["presentation"]["id"]["name"] if data is not None else None},
-    'status/slide': process_slide,
+    'v1/timer/system_time': lambda data: {'prompt': data, 'sub': data, 'status': data},
+    'v1/stage/message': lambda data: {'status': data},
+    'v1/timer/video_countdown': lambda data: {'status': data},
+    'v1/timers/current': lambda data: {'status': data},
+    'v1/presentation/active': lambda data: {
+        'status': (
+            data.get("presentation", {}).get("id", {}).get("name")
+            if isinstance(data, dict) else None
+        )
+    },    
+    'v1/status/slide': process_slide,
 }
 
 def process_data():
     timer = 0
     while True:
         if incoming_data_dict:
-            print(incoming_data_dict)
+            if timer == incoming_data_dict["v1/timer/system_time"]:
+                continue
+            timer = incoming_data_dict["v1/timer/system_time"]
             for url, data in incoming_data_dict.items():
+                parsed_data = safe_parse(data)
                 handler = url_handlers.get(url)
                 if handler:
-                    processed_data = handler(data)
-                    for key, value in processed_data.items():
-                        ready_data[key][url] = value
-                    continue
+                    try:
+                        processed_data = handler(parsed_data)
+                        for key, value in processed_data.items():
+                            ready_data[key][url] = value
+                    except Exception as e:
+                        print(f"[ERROR] Handler failed for {url} with data: {parsed_data} -> {e}")
+
 
 def start_dispatcher():
     dispatcher_thread = threading.Thread(target=process_data)

@@ -1,14 +1,22 @@
 let editor_mode = true;
+const existingClocks = new Map();
+let eventSource = null;
 
-let existingClocks = [];
+// Loader Utils
+function showLoader(show) {
+    const loader = document.getElementById('loader');
+    if (loader) loader.style.display = show ? 'block' : 'none';
+}
 
-function removeClock(timers, id) {
-    const index = timers.indexOf(id);
+function fetchWithLoader(url, options) {
+    showLoader(true);
+    return fetch(url, options).finally(() => showLoader(false));
+}
 
-    if (index !== -1) {
-        timers.splice(index, 1);
-    }
-    document.getElementById(id).remove();
+function removeClock(id) {
+    existingClocks.delete(id);
+    const element = document.getElementById(id);
+    if (element) element.remove();
 }
 
 document.getElementById("stage_msg").addEventListener('submit', function(event) {
@@ -17,382 +25,244 @@ document.getElementById("stage_msg").addEventListener('submit', function(event) 
     const userInput = document.getElementById('user-stage-msg').value;
     const buttonId = event.submitter ? event.submitter.id : event.target.id;
 
-    if(buttonId == "send"){
-        fetch('/api/stage/msg', {
+    const resultContainer = document.getElementById('result-container');
+
+    if(buttonId === "send") {
+        fetchWithLoader('/api/stage/msg', {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_input: userInput })
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-            const resultContainer = document.getElementById('result-container');
             resultContainer.innerHTML = data.result ? "" : "Erreur, message non envoyé";
         })
-        .catch(error => {
-            console.error('Erreur:', error);
-        });
+        .catch(err => console.error('Erreur:', err));
     }
-    else if(buttonId == "delete"){
-        fetch('/api/stage/msg', {
+    else if(buttonId === "delete") {
+        fetchWithLoader('/api/stage/msg', {
             method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
+            headers: { 'Content-Type': 'application/json' }
         })
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-            const resultContainer = document.getElementById('result-container');
-            var pl = document.getElementById('user-stage-msg');
-            if(data.result){
-                resultContainer.innerHTML =  '';
-                pl.placeholder = 'Envoyer msg prompteur';
-            }
-            else{
-                resultContainer.innerHTML =  "Erreur, message non supprimé";
+            if(data.result) {
+                resultContainer.innerHTML = '';
+                document.getElementById('user-stage-msg').placeholder = 'Envoyer msg prompteur';
+            } else {
+                resultContainer.innerHTML = "Erreur, message non supprimé";
             }
         })
-        .catch(error => {
-            console.error('Erreur:', error);
-        });
+        .catch(err => console.error('Erreur:', err));
     }
 });
 
 document.getElementById('submit-button').addEventListener('click', () => {
-    const name = document.getElementById('clock_name').value;
-    const hours = document.getElementById('hours').value;
-    const minutes = document.getElementById('minutes').value;
-    const seconds = document.getElementById('seconds').value;
-
     const timeData = {
-        clock_name: name,
-        hours: hours,
-        minutes: minutes,
-        seconds: seconds
+        clock_name: document.getElementById('clock_name').value,
+        hours: document.getElementById('hours').value,
+        minutes: document.getElementById('minutes').value,
+        seconds: document.getElementById('seconds').value
     };
 
-    fetch('/api/timer', {
+    fetchWithLoader('/api/timer', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(timeData)
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Résultat pour ajout clock: ', data);
-    })
-    .catch((error) => {
-        console.error('Error:', error);
-    });
+    .then(res => res.json())
+    .then(data => console.log('Clock ajoutée:', data))
+    .catch(err => console.error('Erreur:', err));
 });
 
-function fetchStreamData() {
-    const eventSource = new EventSource('/api/status');
+function setupEventSource() {
+    if (eventSource) eventSource.close();
+
+    eventSource = new EventSource('/api/status');
+
+    eventSource.onopen = () => console.log('EventSource ouvert');
+
+    eventSource.onmessage = event => {
+        try {
+            const data = JSON.parse(event.data);
+            updateUIFromData(data);
+        } catch (e) {
+            console.error('Erreur de parsing:', e);
+        }
+    };
+
+    eventSource.onerror = () => {
+        console.warn('Déconnecté, tentative de reconnexion...');
+        eventSource.close();
+        setTimeout(setupEventSource, 5000); // retry
+    };
+}
+
+function updateUIFromData(data) {
     const timeContainer = document.getElementById('time-container');
     const messageContainer = document.getElementById('stage-message-container');
-    const clockContainer = document.getElementById('clock-container');
     const videoContainer = document.getElementById('video-container');
     const slideContainer = document.getElementById('slide-text-container');
     const presentationContainer = document.getElementById('presentation-container');
 
-    var videoEnd = 0;
+    if (data["v1/timer/system_time"]) {
+        const date = new Date(data["v1/timer/system_time"] * 1000);
+        const formattedTime = date.toLocaleTimeString('fr-FR', { hour12: false });
+        timeContainer.textContent = "Heure: " + formattedTime;
+    }
 
-    eventSource.onmessage = function(event) {
-        if(videoEnd > 2){
-            videoContainer.innerHTML = "";
+    if (data["v1/stage/message"]) {
+        const msg = data["v1/stage/message"];
+        messageContainer.textContent = msg ? "Message prompteur: " + msg : "";
+    }
+
+    if (data["v1/timers/current"]) {
+        data["v1/timers/current"].forEach(updateOrCreateClock);
+    }
+
+    if (data["v1/timer/video_countdown"]) {
+        videoContainer.innerHTML = "";
+        const vTimer = data["v1/timer/video_countdown"];
+        if (vTimer !== "0:00:00") {
+            const span = document.createElement('span');
+            span.textContent = vTimer;
+            if (parseInt(vTimer.slice(-2)) < 11) {
+                span.classList.add('blinking');
+            }
+            videoContainer.appendChild(document.createTextNode("Temps restant vidéo: "));
+            videoContainer.appendChild(span);
         }
-        try {
-            const data = JSON.parse(event.data);
-            if(data.url == "timer/system_time"){
-                var date = new Date(data.data * 1000);
-                var hours = date.getHours();
-                var minutes = date.getMinutes();
-                var seconds = date.getSeconds();
-                const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                timeContainer.innerHTML = "Heure: " + formattedTime;
-                videoEnd++;
-            }
-            else if(data.url == "stage/message"){
-                messageContainer.innerHTML = data.data != "" ? "Message prompteur: " + data.data : "";
-            }
-            else if(data.url == "timers/current"){
-                for(const timer of data.data){
-                    if (existingClocks.indexOf(timer.id.name) != -1) {
-                        const clockContainerElement = document.getElementById(timer.id.name);
-                        
-                        const time = clockContainerElement.children[0].children[0];
-                        time.textContent = `${timer.time}`;
-                        time.classList.remove('status-running', 'status-overrun', 'status-stopped');
-                        
-                        const buttonsContainer = clockContainerElement.children[1];
-                        const pause_timer = buttonsContainer.children[0];
+    }
 
-                        pause_timer.innerHTML = "";
-
-                        if(timer.state != "stopped"){
-                            const pause_icon = document.createElement('i');
-                            pause_icon.classList.add('fa-solid', 'fa-stop');
-                            pause_timer.appendChild(pause_icon);
-                            pause_timer.addEventListener('click', () => pauseTimer(timer.id.uuid));
-                        }
-                        else{
-                            const play_icon = document.createElement('i');
-                            play_icon.classList.add('fa-solid', 'fa-play');
-                            pause_timer.appendChild(play_icon);
-                            pause_timer.addEventListener('click', () => playTimer(timer.id.uuid));
-                        }
-
-                        switch (timer.state) {
-                            case 'running':
-                                time.classList.add('status-running');
-                                break;
-                            case 'overrunning':
-                                time.classList.add('status-overrun');
-                                break;
-                            case 'overran':
-                                time.classList.add('status-overrun');
-                                break;
-                            case 'stopped':
-                                time.classList.add('status-stopped');
-                                break;
-                            default:
-                                break;
-                        }
-                    } else {
-                        existingClocks.push(timer.id.name);
-                        
-                        const h3Element = document.createElement('h3');
-                        const clockName = document.createTextNode(`${timer.id.name}: `);
-                        
-                        const time = document.createElement('span');
-                        time.textContent = `${timer.time}`;
-                        const clockContainerElement = document.createElement('div');
-                        
-                        clockContainerElement.classList.add('clock-container');
-                        clockContainerElement.id = timer.id.name;
-
-                        switch (timer.state) {
-                            case 'running':
-                                time.classList.add('status-running');
-                                break;
-                            case 'overrunning':
-                                time.classList.add('status-overrun');
-                                break;
-                            case 'overran':
-                                time.classList.add('status-overrun');
-                                break;
-                            case 'stopped':
-                                time.classList.add('status-stopped');
-                                break;
-                            default:
-                                break;
-                        }
-
-                        const delete_timer = document.createElement('button');
-                        const delete_icon = document.createElement('i');
-                        delete_icon.classList.add('fa-solid', 'fa-trash');
-                        delete_timer.appendChild(delete_icon);
-                        delete_timer.classList.add('button-container');
-                        delete_timer.addEventListener('click', () => deleteTimer(timer.id.uuid, timer.id.name));
-
-                        const pause_timer = document.createElement('button');
-                        pause_timer.classList.add('button-container');
-                        if(timer.state != "stopped"){
-                            const pause_icon = document.createElement('i');
-                            pause_icon.classList.add('fa-solid', 'fa-stop');
-                            pause_timer.appendChild(pause_icon);
-                            pause_timer.addEventListener('click', () => pauseTimer(timer.id.uuid));
-                        }
-                        else{
-                            const play_icon = document.createElement('i');
-                            play_icon.classList.add('fa-solid', 'fa-play');
-                            pause_timer.appendChild(play_icon);
-                            pause_timer.addEventListener('click', () => playTimer(timer.id.uuid));
-                        }
-
-                        const reset_timer = document.createElement('button');
-                        reset_timer.classList.add('button-container');
-                        const reset_icon = document.createElement('i');
-                        reset_icon.classList.add('fa-solid', 'fa-rotate');
-                        reset_timer.appendChild(reset_icon);
-                        reset_timer.addEventListener('click', () => resetTimer(timer.id.uuid));
-
-                        const buttonsContainer = document.createElement('div');
-                        buttonsContainer.classList.add('buttons-container');
-                        buttonsContainer.appendChild(pause_timer);
-                        buttonsContainer.appendChild(reset_timer);
-                        buttonsContainer.appendChild(delete_timer);
-
-                        h3Element.appendChild(clockName);
-                        h3Element.appendChild(time);
-                        clockContainerElement.appendChild(h3Element);
-                        clockContainerElement.appendChild(buttonsContainer);
-
-                        clockContainer.appendChild(clockContainerElement);
-                    }
-                }
-            }
-            else if(data.url == "timer/video_countdown"){
-                videoContainer.innerHTML = "";
-                vTimer = data.data
-                if(vTimer != "0:00:00"){
-                    const time = document.createElement('span');
-                    time.textContent = `${vTimer}`;
-                    const clockName = document.createTextNode(`Temps restant vidéo: `);
-                    if(parseInt(vTimer.slice(-2)) < 11){
-                        time.classList.add('blinking');
-                    }
-                    else{
-                        time.classList.remove('blinking');
-                    }
-                    videoContainer.appendChild(clockName);
-                    videoContainer.appendChild(time);
-                    videoEnd = 0;
-                }
-            }
-            else if(data.url == "status/slide"){
-                slideContainer.innerHTML = "";
-                slide = data.data;
-                current_text = slide.current.text;
-                next_text = slide.next.text;
-                const current = document.createElement('h3');
-                const next = document.createElement('h3');
-                current.innerHTML = current_text != "" ? `Slide actuelle: ${current_text}` : "";
-                next.innerHTML = next_text != "" ? `Slide suivante: ${next_text}` : "";
-                slideContainer.appendChild(current);
-                slideContainer.appendChild(next);
-            }
-            else if(data.url == "presentation/active"){
-                presentationContainer.innerHTML = data.data != "" || data.data != null ? data.data : "";
-            }
-        } catch (error) {
-            console.error('Failed to parse JSON:', error);
+    if (data["v1/status/slide"]) {
+        slideContainer.innerHTML = "";
+        const slide = data["v1/status/slide"];
+        if (slide?.subtitle) {
+            const current = document.createElement('h3');
+            current.textContent = `Slide actuelle: ${slide.subtitle}`;
+            slideContainer.appendChild(current);
         }
-    };
+    }
 
-    eventSource.onerror = function(event) {
-        console.error('EventSource failed:', event);
-        messageContainer.innerHTML = "PP7 non connecté";
-        messageContainer.classList.add("ALERT");
-        eventSource.close();
-    };
-
-    eventSource.onopen = function(event) {
-        console.log('EventSource opened');
-    };
+    if (data["v1/presentation/active"]) {
+        presentationContainer.textContent = `titre presentation: ${data["v1/presentation/active"]}`;
+    }
 }
 
+function updateOrCreateClock(timer) {
+    let clock = document.getElementById(timer.id.name);
+    const container = document.getElementById('clock-container');
+
+    if (!clock) {
+        clock = document.createElement('div');
+        clock.id = timer.id.name;
+        clock.classList.add('clock-container');
+
+        const h3 = document.createElement('h3');
+        h3.textContent = `${timer.id.name}: `;
+
+        const time = document.createElement('span');
+        time.className = 'time';
+        time.textContent = timer.time;
+        h3.appendChild(time);
+
+        const pauseBtn = createControlButton(timer, 'pause');
+        const resetBtn = createControlButton(timer, 'reset');
+        const deleteBtn = createControlButton(timer, 'delete');
+
+        const btns = document.createElement('div');
+        btns.classList.add('buttons-container');
+        btns.append(pauseBtn, resetBtn, deleteBtn);
+
+        clock.append(h3, btns);
+        container.appendChild(clock);
+        existingClocks.set(timer.id.name, clock);
+    } else {
+        clock.querySelector('.time').textContent = timer.time;
+    }
+
+    const time = clock.querySelector('.time');
+    time.className = 'time';
+    switch (timer.state) {
+        case 'running': time.classList.add('status-running'); break;
+        case 'overrunning':
+        case 'overran': time.classList.add('status-overrun'); break;
+        case 'stopped': time.classList.add('status-stopped'); break;
+    }
+}
+
+function createControlButton(timer, type) {
+    const btn = document.createElement('button');
+    btn.classList.add('button-container');
+    const icon = document.createElement('i');
+
+    switch (type) {
+        case 'pause':
+            icon.classList.add('fa-solid', timer.state === 'stopped' ? 'fa-play' : 'fa-stop');
+            btn.onclick = () => (timer.state === 'stopped' ? playTimer(timer.id.uuid) : pauseTimer(timer.id.uuid));
+            break;
+        case 'reset':
+            icon.classList.add('fa-solid', 'fa-rotate');
+            btn.onclick = () => resetTimer(timer.id.uuid);
+            break;
+        case 'delete':
+            icon.classList.add('fa-solid', 'fa-trash');
+            btn.onclick = () => deleteTimer(timer.id.uuid, timer.id.name);
+            break;
+    }
+
+    btn.appendChild(icon);
+    return btn;
+}
+
+// Timer API actions
 function pauseTimer(uuid) {
-    fetch(`/api/timer/pause/${uuid}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(`pause_timer: ${data.result}`);
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-    });
+    fetchWithLoader(`/api/timer/pause/${uuid}`, { method: 'GET' });
 }
 
 function playTimer(uuid) {
-    fetch(`/api/timer/play/${uuid}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(`play_timer: ${data.result}`);
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-    });
+    fetchWithLoader(`/api/timer/play/${uuid}`, { method: 'GET' });
 }
 
 function resetTimer(uuid) {
-    fetch(`/api/timer/reset/${uuid}`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(`reset_timer: ${data.result}`);
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-    });
+    fetchWithLoader(`/api/timer/reset/${uuid}`, { method: 'GET' });
 }
 
 function deleteTimer(uuid, id) {
-    fetch(`/api/timer/${uuid}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log(`delete_timer: ${data.result}`);
-        removeClock(existingClocks, id);
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-    });
+    fetchWithLoader(`/api/timer/${uuid}`, { method: 'DELETE' })
+    .then(() => removeClock(id));
 }
 
-fetchStreamData();
-
-document.getElementById('toggle-dark-mode').addEventListener('click', function() {
+// UI toggles
+document.getElementById('toggle-dark-mode').addEventListener('click', () => {
     document.body.classList.toggle('light-mode');
-    console.log("toggle dark mode");
-    const button = document.getElementById('toggle-dark-mode');
-    const icon = button.querySelector('i');
-    if (document.body.classList.contains('light-mode')) {
-        icon.classList.replace('fa-sun', 'fa-moon');
-    } else {
-        icon.classList.replace('fa-moon', 'fa-sun');
-    }
+    const icon = document.getElementById('toggle-dark-mode').querySelector('i');
+    icon.classList.toggle('fa-sun');
+    icon.classList.toggle('fa-moon');
 });
 
-document.getElementById('toggle-language').addEventListener('click', function() {
-    const button = document.getElementById('toggle-language');
-    if (button.textContent === 'Français') {
-        button.textContent = 'English';
+document.getElementById('toggle-language').addEventListener('click', () => {
+    const btn = document.getElementById('toggle-language');
+    if (btn.textContent === 'Français') {
+        btn.textContent = 'English';
         changeLanguageToEnglish();
     } else {
-        button.textContent = 'Français';
+        btn.textContent = 'Français';
         changeLanguageToFrench();
     }
 });
 
-document.getElementById('toggle-editor-mode').addEventListener('click', function() {
-    const add_timer = document.getElementById('clock-editor');
-    add_timer.classList.toggle('invisible');
-    const clockContainer = document.getElementById('clock-container');
-    clockContainer.classList.toggle('invisible-clock');
+document.getElementById('toggle-editor-mode').addEventListener('click', () => {
+    document.getElementById('clock-editor').classList.toggle('invisible');
+    document.getElementById('clock-container').classList.toggle('invisible-clock');
     editor_mode = !editor_mode;
 });
 
-document.getElementById('joke').addEventListener('click', function() {
-    fetch(`/api/joke`, {
-        method: 'GET'
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert('Very funny!');
-    })
-    .catch(error => {
-        console.error('your joke didn\'t work');
-    });
+document.getElementById('joke').addEventListener('click', () => {
+    fetchWithLoader(`/api/joke`, { method: 'GET' })
+    .then(res => res.json())
+    .then(() => alert('Very funny!'))
+    .catch(() => console.error('your joke didn\'t work'));
 });
 
 function changeLanguageToEnglish() {
@@ -420,3 +290,5 @@ function changeLanguageToFrench() {
     document.querySelector('label[for="seconds"]').textContent = 'Secondes:';
     document.getElementById('submit-button').textContent = 'Ajouter';
 }
+
+setupEventSource();

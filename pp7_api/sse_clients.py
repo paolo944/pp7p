@@ -15,9 +15,6 @@ def _read_api_stream(host, port, url):
             }, separators=(',', ':')) + "\r\n"
 
             sock.send(msg.encode('utf-8'))
-
-            print(msg)
-
             while True:
                 chunk = sock.recv(1024).decode('utf-8')
                 if not chunk:
@@ -40,7 +37,7 @@ def _read_api_stream(host, port, url):
 
                         url = parsed.get("url")
                         data = parsed.get("data")
-                        print(f"{url}: {data}")
+                        #print(f"{url}: {data}")
 
                         if url and data:
                             incoming_data_dict[url] = data

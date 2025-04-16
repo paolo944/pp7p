@@ -7,12 +7,12 @@ class Timer:
         self.port = port
                     
     def play(self, uuid):
-        msg = json.dumps({"url": f"v1/timer/{uuid}/start", "method": "GET"}, separators=(',', ':'))
+        msg = json.dumps({"url": f"v1/timer/{uuid}/start", "method": "GET"}, separators=(',', ':')) + "\r\n"
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.host, self.port))
-                s.sendall(msg.encode('utf-8'))
+                s.send(msg.encode('utf-8'))
                 response = s.recv(1024)
 
                 if response.decode('utf-8'):
@@ -27,12 +27,12 @@ class Timer:
 
 
     def pause(self, uuid):
-        msg = json.dumps({"url": f"v1/timer/{uuid}/stop", "method": "GET"}, separators=(',', ':'))
+        msg = json.dumps({"url": f"v1/timer/{uuid}/stop", "method": "GET"}, separators=(',', ':')) + "\r\n"
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.host, self.port))
-                s.sendall(msg.encode('utf-8'))
+                s.send(msg.encode('utf-8'))
                 response = s.recv(1024)
 
                 if response.decode('utf-8'):
@@ -46,12 +46,12 @@ class Timer:
             return False
 
     def reset(self, uuid):
-        msg = json.dumps({"url": f"v1/timer/{uuid}/reset", "method": "GET"}, separators=(',', ':'))
+        msg = json.dumps({"url": f"v1/timer/{uuid}/reset", "method": "GET"}, separators=(',', ':')) + "\r\n"
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.host, self.port))
-                s.sendall(msg.encode('utf-8'))
+                s.send(msg.encode('utf-8'))
                 response = s.recv(1024)
 
                 if response.decode('utf-8'):
@@ -65,12 +65,12 @@ class Timer:
             return False
 
     def delete(self, uuid):
-        msg = json.dumps({"url": f"v1/timer/{uuid}", "method": "DELETE"}, separators=(',', ':'))
+        msg = json.dumps({"url": f"v1/timer/{uuid}", "method": "DELETE"}, separators=(',', ':')) + "\r\n"
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.host, self.port))
-                s.sendall(msg.encode('utf-8'))
+                s.send(msg.encode('utf-8'))
                 response = s.recv(1024)
 
                 if response.decode('utf-8'):
@@ -94,9 +94,18 @@ class Timer:
         seconds = data.get('seconds')
         name = data.get('clock_name')
 
-        seconds = int(seconds)
-        seconds += int(minutes) * 60
-        seconds += int(hours) * 3600
+        try:
+            seconds = int(seconds)
+        except:
+            seconds = 0
+        try:
+            seconds += int(minutes) * 60
+        except:
+            seconds += 0
+        try:
+            seconds += int(hours) * 3600
+        except:
+            seconds += 0
 
         data = {
             "allows_overrun": True,
@@ -106,15 +115,16 @@ class Timer:
             "name": name
         }
 
-        msg = json.dumps({"url": f"v1/timers", "method": "POST", "body": data}, separators=(',', ':'))
+        msg = json.dumps({"url": f"v1/timers", "method": "POST", "body": data}, separators=(',', ':')) + "\r\n"
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((self.host, self.port))
-                s.sendall(msg.encode('utf-8'))
+                s.send(msg.encode('utf-8'))
                 response = s.recv(1024)
+                print(response)
 
-                if response.decode('utf-8'): #A finir ici
+                if response.decode('utf-8'):
                     print(f"Timer: {name} ajouté")
                     return True
                 else:
