@@ -59,6 +59,46 @@ demandez le moi par mail.
     python3 app.py
     ```
 
+## Utilisation
+
+Il vous faut d'abord vous munir de l'adresse qui apparaîtra dans le terminal
+au moment du lancement de l'application, par exemple:
+```bash
+ * Running on http://127.0.0.1:5000
+ * Running on http://10.192.8.80:5000
+```
+
+Il faut pas utiliser l'adresse commençant par 127 mais l'autre.
+La première adresse est locale, elle peut-être utilisé uniquement
+si vous êtes sur la même machine que celle sur laquelle vous avez lancé
+l'application.
+
+Voici les adresses qui vont sont accessibles:
+- {adresse}/
+- {adresse}/subtitles
+- {adresse}/prompt
+
+Où {adresse} est l'adresse que vous avez trouvé plus haut.
+Dans l'exemple, les adresses seraient:
+- http://10.192.8.80:5000/
+- http://10.192.8.80:5000/subtitles
+- http://10.192.8.80:5000/prompt
+
+La page principale contient:
+
+- Les clocks en live et de les lancer, arrêter, supprimer ou relancer
+- La posibilité d'envoyer et de supprimer un message sur le prompteur
+- Voir le nom de la présentation actuelle
+- Voir le texte de la slide actuelle
+- Pouvoir ajouter une clock
+
+La page subtitles cotient les sous-titres actuels avec un format spécifique
+à Hillsong Paris, de façon à sauter une ligne sur deux.
+Il y a également 2 formats différents en fonction de si c'est pour une slide
+de louange ou de verset.
+
+La page prompt contient un prompteur (Pas encore fait).
+
 ## Bug report
 
 Si vous rencontrez un bug ou quelconque souci, vous pouvez me contacter sur
