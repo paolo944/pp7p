@@ -1,3 +1,3 @@
-pp7_api/__pycache__
 info.json
-env
+.env
+**/__pycache__/

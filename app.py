@@ -25,12 +25,15 @@ def make_stream(filtre_type):
         timer = 0
         try:
             while True:
+                dispatcher.ready_data
                 data = dispatcher.ready_data[filtre_type]
                 if data:
+                    print("data sent")
+
                     if data['timer/system_time'] ==  timer:
                         yield ": ping\n\n"
                         continue
-                yield f"data: {json.dumps(data)}\n\n"
+                    yield f"data: {json.dumps(data)}\n\n"
         except GeneratorExit:
             clients.remove(client)  # Nettoyage lors de la fermeture de la connexion
 
@@ -154,4 +157,5 @@ app.config['COMPRESS_MIN_SIZE'] = 500
 if __name__ == '__main__':
     sse_clients.start_api_stream(host, port)
     dispatcher.start_dispatcher()
+
     app.run(host='0.0.0.0', port=5000, debug=True)

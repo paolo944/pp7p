@@ -11,6 +11,7 @@ incoming_data_dict = {
 ready_data = {'prompt': {}, 'sub': {}, 'status': {}}
 
 def process_slide(data):
+    print(data)
     data_final = {}
     text = data["current"]["text"]
     data_final["type"] = "versets" if any(char.isdigit() for char in text) else "louanges"
@@ -43,17 +44,14 @@ def process_data():
     timer = 0
     while True:
         if incoming_data_dict:
-            new_timer = int(incoming_data_dict.get('timer/system_time', timer))
-            if new_timer == timer:
-                continue
-            timer = new_timer
-
+            print(incoming_data_dict)
             for url, data in incoming_data_dict.items():
                 handler = url_handlers.get(url)
                 if handler:
                     processed_data = handler(data)
                     for key, value in processed_data.items():
                         ready_data[key][url] = value
+                    continue
 
 def start_dispatcher():
     dispatcher_thread = threading.Thread(target=process_data)

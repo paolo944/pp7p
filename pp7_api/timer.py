@@ -7,7 +7,7 @@ class Timer:
         self.port = port
                     
     def play(self, uuid):
-        msg = json.dumps({"url": f"v1/timer/{uuid}/start", "method": "GET"}, separetors=(',', ':'))
+        msg = json.dumps({"url": f"v1/timer/{uuid}/start", "method": "GET"}, separators=(',', ':'))
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -27,7 +27,7 @@ class Timer:
 
 
     def pause(self, uuid):
-        msg = json.dumps({"url": f"v1/timer/{uuid}/stop", "method": "GET"}, separetors=(',', ':'))
+        msg = json.dumps({"url": f"v1/timer/{uuid}/stop", "method": "GET"}, separators=(',', ':'))
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -46,7 +46,7 @@ class Timer:
             return False
 
     def reset(self, uuid):
-        msg = json.dumps({"url": f"v1/timer/{uuid}/reset", "method": "GET"}, separetors=(',', ':'))
+        msg = json.dumps({"url": f"v1/timer/{uuid}/reset", "method": "GET"}, separators=(',', ':'))
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -65,7 +65,7 @@ class Timer:
             return False
 
     def delete(self, uuid):
-        msg = json.dumps({"url": f"v1/timer/{uuid}", "method": "DELETE"}, separetors=(',', ':'))
+        msg = json.dumps({"url": f"v1/timer/{uuid}", "method": "DELETE"}, separators=(',', ':'))
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -106,7 +106,7 @@ class Timer:
             "name": name
         }
 
-        msg = json.dumps({"url": f"v1/timers", "method": "POST", "body": data}, separetors=(',', ':'))
+        msg = json.dumps({"url": f"v1/timers", "method": "POST", "body": data}, separators=(',', ':'))
 
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

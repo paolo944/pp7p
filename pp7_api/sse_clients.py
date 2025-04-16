@@ -3,27 +3,20 @@ import socket
 import json
 from .dispatcher import incoming_data_dict
 
-def _read_api_stream(host, port):
-    urls = [
-            "stage/message",
-            "timers/current",
-            "timer/video_countdown",
-            "timer/system_time",
-            "status/slide",
-            "presentation/active"
-    ]
+def _read_api_stream(host, port, url):
     try:
         with socket.create_connection((host, port)) as sock:
             buffer = ""
 
             msg = json.dumps({
-                "url": "v1/status/updates",
-                "method": "POST",
-                "body": urls,
+                "url": url,
+                "method": "GET",
                 "chunked": True
-            }, separators=(',', ':'))
+            }, separators=(',', ':')) + "\r\n"
 
-            sock.sendall(msg.encode('utf-8'))
+            sock.send(msg.encode('utf-8'))
+
+            print(msg)
 
             while True:
                 chunk = sock.recv(1024).decode('utf-8')
@@ -47,16 +40,12 @@ def _read_api_stream(host, port):
 
                         url = parsed.get("url")
                         data = parsed.get("data")
+                        print(f"{url}: {data}")
 
                         if url and data:
-                            if url in incoming_data_dict:
-                                incoming_data_dict.move_to_end(url)
-                                incoming_data_dict[url] = data
-                            else:
-                                incoming_data_dict[url] = data
+                            incoming_data_dict[url] = data
+                            #print(f"incoming_data: {incoming_data_dict}\n\n")
 
-                            if len(incoming_data_dict) > MAX_URLS:
-                                incoming_data_dict.popitem(last=False)
                     except json.JSONDecodeError:
                         print(f"[TCP] JSON invalide: {line}")
                         continue
@@ -65,5 +54,14 @@ def _read_api_stream(host, port):
         print(f"[TCP] Erreur de connexion: {e}")
 
 def start_api_stream(host='localhost', port=9000):
-    thread = threading.Thread(target=_read_api_stream, args=(host, port), daemon=True)
-    thread.start()
+    urls = [
+            "v1/stage/message",
+            "v1/timers/current",
+            "v1/timer/video_countdown",
+            "v1/timer/system_time",
+            "v1/status/slide",
+            "v1/presentation/active"
+    ]
+    for i in urls:
+        thread = threading.Thread(target=_read_api_stream, args=(host, port, i), daemon=True)
+        thread.start()
