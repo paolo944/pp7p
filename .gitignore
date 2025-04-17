@@ -1,3 +1,6 @@
 info.json
 .env
 **/__pycache__/
+*.log
+~/Library/LaunchAgents/com.monnom.startapp.plist
+keys/

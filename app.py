@@ -4,6 +4,7 @@ from pp7_api import stage, timer, sse_clients, dispatcher
 import json
 import socket
 import os
+from auth import bake_cookie, authorise
 
 host = ""
 port = ""
@@ -40,6 +41,19 @@ def make_stream(filtre_type):
 app = Flask(__name__, static_folder='public')
 Compress(app)
 PUBLIC_DIR = os.path.join(os.getcwd(), 'public')
+
+@app.before_request
+def check_token():
+    exempt_routes = ['login']
+
+    if request.endpoint in exempt_routes:
+        return
+
+    auth_header = request.headers.get('Authorization')
+
+    if not auth_header or not authorise(auth_header.replace('Bearer ', '', 1)):
+        return redirect(url_for('login'))
+
 
 @app.route('/api/stage/msg', methods=['PUT'])
 def stage_send_msg():

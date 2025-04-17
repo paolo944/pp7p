@@ -22,30 +22,21 @@ demandez le moi par mail.
 1. Ouvrez un terminal et tapez cette commande pour récupérer l'application sur
     github:  
     ```bash
-    git clone https://github.com/paolo944/pp7p.git
+    cd && git clone https://github.com/paolo944/pp7p.git
     ```
 2. Une fois téléchargé, allez dans le dossier de l'application avec la commande suivante:  
     ```bash
     cd pp7p
     ```
-3. Il faut créer un environement pour simplifier l'installation avec cette commande:  
-    ```bash
-    python3 -m venv env && source env/bin/activate
-    ```
-4. Ensuite, installez les dépendances de l'application avec cette commande tout
-    en restant dans le dossier de l'application:  
-    ```bash
-    pip3 install -r requirements.txt
-    ```
-5. Allez dans les paramètres de l'application ProPresenter dans la rubrique réseaux/network  
-    Activez l'option ??, une adresse ip apparaîtra et vous pouvez choisir un numéro de port.  
+3. Allez dans les paramètres de l'application ProPresenter dans la rubrique réseaux/network  
+    Activez l'option TCP/IP tout en bas et l'option network tout en haut, une adresse ip apparaîtra en haut et vous pouvez choisir un numéro de port tout en bas sous l'option TCP/IP.  
     Choissisez un numéro de port entre 40000 et 65000 pour éviter d'avoir des erreurs.  
-    Notez l'adresse ip, qui est de la forme: 192.168.0.0 et le port.  
+    Notez l'adresse ip, qui est de la forme: 192.168.0.0 et le port que vous avez choisi sous l'option TCP/IP.  
     utilisez la commande suivante dans votre terminal pour créer le fichier de configuration:  
     ```bash
     touch info.json
     ```
-6. Ouvrez ce fichier avec un éditeur de texte normal et remplissez le comme-ceci:
+4. Ouvrez ce fichier avec un éditeur de texte normal et remplissez le comme-ceci:
     ```json
     {
         "host": "{adresse ip}",
@@ -54,10 +45,12 @@ demandez le moi par mail.
     ```
     Notez bien les guillements qui sont importants et remplacez {adresse ip} par celle qui vous avez noté  
     et {port} par celui que vous avez noté.
-5. Vous pourrez finalement lancer l'application avec cette commande:  
+5. Vous pouvez lancer la configuration de l'application avec la commande:
     ```bash
-    python3 app.py
+    bash config.sh
     ```
+    A présent l'application se lancera automatiquement à chaque démarrage de la machine donc
+    pas besoin de lancer ou de se soucier d'elle.
 
 ## Utilisation
 
