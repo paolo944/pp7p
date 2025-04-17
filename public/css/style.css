@@ -81,9 +81,13 @@ form button {
 }
 
 .button-container i {
-    margin-right: 10px;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
+.button-container:hover i {
+    transform: scale(1.2);
+    color: #ff9800;
+}
 .form-container label, .form-container input {
     display: block;
     width: 100%;

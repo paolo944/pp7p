@@ -107,41 +107,36 @@ function updateUIFromData(data) {
 
     if (data["timer/system_time"]) {
         const date = new Date(data["timer/system_time"] * 1000);
-        const formattedTime = date.toLocaleTimeString('fr-FR', { hour12: false });
-        timeContainer.textContent = "Heure: " + formattedTime;
+        timeContainer.textContent = "Heure: " + date.toLocaleTimeString('fr-FR', { hour12: false });
     }
 
     if (data["stage/message"]) {
-        const msg = data["stage/message"];
-        messageContainer.textContent = msg ? "Message prompteur: " + msg : "";
+        messageContainer.textContent = data["stage/message"] ? "Message prompteur: " + data["stage/message"] : "";
     }
 
-    if (data["timers/current"]) {
-        data["timers/current"].forEach(updateOrCreateClock);
+    const timers = data["timers/current"] || [];
+
+    // SUPPRESSION des clocks qui n'existent plus
+    const serverClocks = new Set(timers.map(t => t.id.name));
+    for (const [name, clock] of existingClocks.entries()) {
+        if (!serverClocks.has(name)) {
+            clock.remove();
+            existingClocks.delete(name);
+        }
     }
+
+    // CREATION ou MISE À JOUR des clocks existantes
+    timers.forEach(updateOrCreateClock);
 
     if (data["timer/video_countdown"]) {
-        videoContainer.innerHTML = "";
         const vTimer = data["timer/video_countdown"];
-        if (vTimer !== "0:00:00") {
-            const span = document.createElement('span');
-            span.textContent = vTimer;
-            if (parseInt(vTimer.slice(-2)) < 11) {
-                span.classList.add('blinking');
-            }
-            videoContainer.appendChild(document.createTextNode("Temps restant vidéo: "));
-            videoContainer.appendChild(span);
-        }
+        videoContainer.innerHTML = vTimer !== "0:00:00" ? `
+            Temps restant vidéo: <span class="${parseInt(vTimer.slice(-2)) < 11 ? 'blinking' : ''}">${vTimer}</span>
+        ` : '';
     }
 
-    if (data["status/slide"]) {
-        slideContainer.innerHTML = "";
-        const slide = data["status/slide"];
-        if (slide?.subtitle) {
-            const current = document.createElement('h3');
-            current.textContent = `Slide actuelle: ${slide.subtitle}`;
-            slideContainer.appendChild(current);
-        }
+    if (data["status/slide"]?.subtitle) {
+        slideContainer.innerHTML = `<h3>Slide actuelle: ${data["status/slide"].subtitle}</h3>`;
     }
 
     if (data["presentation/active"]) {
@@ -149,8 +144,9 @@ function updateUIFromData(data) {
     }
 }
 
+
 function updateOrCreateClock(timer) {
-    let clock = document.getElementById(timer.id.name);
+    let clock = existingClocks.get(timer.id.name);
     const container = document.getElementById('clock-container');
 
     if (!clock) {
@@ -159,12 +155,7 @@ function updateOrCreateClock(timer) {
         clock.classList.add('clock-container');
 
         const h3 = document.createElement('h3');
-        h3.textContent = `${timer.id.name}: `;
-
-        const time = document.createElement('span');
-        time.className = 'time';
-        time.textContent = timer.time;
-        h3.appendChild(time);
+        h3.innerHTML = `${timer.id.name}: <span class="time"></span>`;
 
         const pauseBtn = createControlButton(timer, 'pause');
         const resetBtn = createControlButton(timer, 'reset');
@@ -177,17 +168,30 @@ function updateOrCreateClock(timer) {
         clock.append(h3, btns);
         container.appendChild(clock);
         existingClocks.set(timer.id.name, clock);
-    } else {
-        clock.querySelector('.time').textContent = timer.time;
     }
 
-    const time = clock.querySelector('.time');
-    time.className = 'time';
+    // Toujours mettre à jour le texte et les classes
+    const timeSpan = clock.querySelector('.time');
+    timeSpan.textContent = timer.time;
+    timeSpan.className = 'time'; // reset classes
     switch (timer.state) {
-        case 'running': time.classList.add('status-running'); break;
+        case 'running': timeSpan.classList.add('status-running'); break;
         case 'overrunning':
-        case 'overran': time.classList.add('status-overrun'); break;
-        case 'stopped': time.classList.add('status-stopped'); break;
+        case 'overran': timeSpan.classList.add('status-overrun'); break;
+        case 'stopped': timeSpan.classList.add('status-stopped'); break;
+    }
+
+    // Mettre à jour bouton play/pause existant
+    const pauseBtn = clock.querySelector('.pause-btn');
+    if (pauseBtn) {
+        const icon = pauseBtn.querySelector('i');
+        if (timer.state === 'running') {
+            icon.className = 'fa-solid fa-stop';
+            pauseBtn.dataset.state = 'running';
+        } else {
+            icon.className = 'fa-solid fa-play';
+            pauseBtn.dataset.state = 'stopped';
+        }
     }
 }
 
@@ -199,29 +203,48 @@ function createControlButton(timer, type) {
     switch (type) {
         case 'pause':
             icon.classList.add('fa-solid', timer.state === 'stopped' ? 'fa-play' : 'fa-stop');
-            btn.onclick = () => (timer.state === 'stopped' ? playTimer(timer.id.uuid) : pauseTimer(timer.id.uuid));
+            btn.appendChild(icon);
+            btn.classList.add('pause-btn'); // utile pour le retrouver plus tard
+            btn.dataset.uuid = timer.id.uuid;
+            btn.dataset.state = timer.state; // sauvegarde l'état localement
+            btn.onclick = () => toggleTimerState(btn);
             break;
         case 'reset':
             icon.classList.add('fa-solid', 'fa-rotate');
             btn.onclick = () => resetTimer(timer.id.uuid);
+            btn.appendChild(icon);
             break;
         case 'delete':
             icon.classList.add('fa-solid', 'fa-trash');
             btn.onclick = () => deleteTimer(timer.id.uuid, timer.id.name);
+            btn.appendChild(icon);
             break;
     }
 
-    btn.appendChild(icon);
     return btn;
 }
 
 // Timer API actions
-function pauseTimer(uuid) {
-    fetchWithLoader(`/api/timer/pause/${uuid}`, { method: 'GET' });
-}
+function toggleTimerState(btn) {
+    const icon = btn.querySelector('i');
+    const uuid = btn.dataset.uuid;
+    const currentState = btn.dataset.state;
 
-function playTimer(uuid) {
-    fetchWithLoader(`/api/timer/play/${uuid}`, { method: 'GET' });
+    if (currentState === 'stopped') {
+        // On est stoppé, donc on veut jouer
+        fetchWithLoader(`/api/timer/play/${uuid}`, { method: 'GET' })
+            .then(() => {
+                icon.className = 'fa-solid fa-stop';
+                btn.dataset.state = 'running';
+            });
+    } else {
+        // On est en cours, donc on veut pause
+        fetchWithLoader(`/api/timer/pause/${uuid}`, { method: 'GET' })
+            .then(() => {
+                icon.className = 'fa-solid fa-play';
+                btn.dataset.state = 'stopped';
+            });
+    }
 }
 
 function resetTimer(uuid) {
@@ -230,7 +253,13 @@ function resetTimer(uuid) {
 
 function deleteTimer(uuid, id) {
     fetchWithLoader(`/api/timer/${uuid}`, { method: 'DELETE' })
-    .then(() => removeClock(id));
+    .then(res => {
+        if (res.ok) {
+            removeClock(id);
+        } else {
+            console.error("Erreur lors de la suppression du timer");
+        }
+    });
 }
 
 // UI toggles
