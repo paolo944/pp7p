@@ -2,12 +2,12 @@ import threading
 import json
 
 incoming_data_dict = {
-            "v1/stage/message": "",
-            "v1/timers/current": "",
-            "v1/timer/video_countdown": "",
-            "v1/timer/system_time": 0,
-            "v1/status/slide": "",
-            "v1/presentation/active": ""
+            "stage/message": "",
+            "timers/current": "",
+            "timer/video_countdown": "",
+            "timer/system_time": 0,
+            "status/slide": "",
+            "presentation/active": ""
             }
 
 ready_data = {'prompt': {}, 'sub': {}, 'status': {}}
@@ -46,26 +46,26 @@ def process_slide(data):
     return data
 
 url_handlers = {
-    'v1/timer/system_time': lambda data: {'prompt': data, 'sub': data, 'status': data},
-    'v1/stage/message': lambda data: {'status': data},
-    'v1/timer/video_countdown': lambda data: {'status': data},
-    'v1/timers/current': lambda data: {'status': data},
-    'v1/presentation/active': lambda data: {
+    'timer/system_time': lambda data: {'prompt': data, 'sub': data, 'status': data},
+    'stage/message': lambda data: {'status': data},
+    'timer/video_countdown': lambda data: {'status': data},
+    'timers/current': lambda data: {'status': data},
+    'presentation/active': lambda data: {
         'status': (
             data.get("presentation", {}).get("id", {}).get("name")
             if isinstance(data, dict) else None
         )
     },    
-    'v1/status/slide': process_slide,
+    'status/slide': process_slide,
 }
 
 def process_data():
     timer = 0
     while True:
         if incoming_data_dict:
-            if timer == incoming_data_dict["v1/timer/system_time"]:
+            if timer == incoming_data_dict["timer/system_time"]:
                 continue
-            timer = incoming_data_dict["v1/timer/system_time"]
+            timer = incoming_data_dict["timer/system_time"]
             for url, data in incoming_data_dict.items():
                 parsed_data = safe_parse(data)
                 handler = url_handlers.get(url)
@@ -73,7 +73,8 @@ def process_data():
                     try:
                         processed_data = handler(parsed_data)
                         for key, value in processed_data.items():
-                            ready_data[key][url] = value
+                            if key != None and value != None:
+                                ready_data[key][url] = value
                     except Exception as e:
                         print(f"[ERROR] Handler failed for {url} with data: {parsed_data} -> {e}")
 

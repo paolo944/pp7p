@@ -28,7 +28,7 @@ def make_stream(filtre_type):
                 dispatcher.ready_data
                 data = dispatcher.ready_data[filtre_type]
                 if data:
-                    if data['v1/timer/system_time'] ==  timer:
+                    if data['timer/system_time'] ==  timer:
                         yield ": ping\n\n"
                         continue
                     yield f"data: {json.dumps(data)}\n\n"

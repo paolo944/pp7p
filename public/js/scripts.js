@@ -105,24 +105,24 @@ function updateUIFromData(data) {
     const slideContainer = document.getElementById('slide-text-container');
     const presentationContainer = document.getElementById('presentation-container');
 
-    if (data["v1/timer/system_time"]) {
-        const date = new Date(data["v1/timer/system_time"] * 1000);
+    if (data["timer/system_time"]) {
+        const date = new Date(data["timer/system_time"] * 1000);
         const formattedTime = date.toLocaleTimeString('fr-FR', { hour12: false });
         timeContainer.textContent = "Heure: " + formattedTime;
     }
 
-    if (data["v1/stage/message"]) {
-        const msg = data["v1/stage/message"];
+    if (data["stage/message"]) {
+        const msg = data["stage/message"];
         messageContainer.textContent = msg ? "Message prompteur: " + msg : "";
     }
 
-    if (data["v1/timers/current"]) {
-        data["v1/timers/current"].forEach(updateOrCreateClock);
+    if (data["timers/current"]) {
+        data["timers/current"].forEach(updateOrCreateClock);
     }
 
-    if (data["v1/timer/video_countdown"]) {
+    if (data["timer/video_countdown"]) {
         videoContainer.innerHTML = "";
-        const vTimer = data["v1/timer/video_countdown"];
+        const vTimer = data["timer/video_countdown"];
         if (vTimer !== "0:00:00") {
             const span = document.createElement('span');
             span.textContent = vTimer;
@@ -134,9 +134,9 @@ function updateUIFromData(data) {
         }
     }
 
-    if (data["v1/status/slide"]) {
+    if (data["status/slide"]) {
         slideContainer.innerHTML = "";
-        const slide = data["v1/status/slide"];
+        const slide = data["status/slide"];
         if (slide?.subtitle) {
             const current = document.createElement('h3');
             current.textContent = `Slide actuelle: ${slide.subtitle}`;
@@ -144,8 +144,8 @@ function updateUIFromData(data) {
         }
     }
 
-    if (data["v1/presentation/active"]) {
-        presentationContainer.textContent = `titre presentation: ${data["v1/presentation/active"]}`;
+    if (data["presentation/active"]) {
+        presentationContainer.textContent = `titre presentation: ${data["presentation/active"]}`;
     }
 }
 

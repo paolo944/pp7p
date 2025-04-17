@@ -12,7 +12,7 @@ function setupSubEventSource() {
     subEventSource.onmessage = event => {
         try {
             const data = JSON.parse(event.data);
-            handleSubSlideData(data['v1/status/slide']);
+            handleSubSlideData(data['status/slide']);
         } catch (err) {
             console.error('Erreur parsing sub slide:', err);
         }

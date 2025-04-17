@@ -3,14 +3,15 @@ import socket
 import json
 from .dispatcher import incoming_data_dict
 
-def _read_api_stream(host, port, url):
+def _read_api_stream(host, port, urls):
     try:
         with socket.create_connection((host, port)) as sock:
             buffer = ""
 
             msg = json.dumps({
-                "url": url,
-                "method": "GET",
+                "url": "v1/status/updates",
+                "method": "POST",
+                "body": urls,
                 "chunked": True
             }, separators=(',', ':')) + "\r\n"
 
@@ -35,8 +36,9 @@ def _read_api_stream(host, port, url):
                             print(f"[API Error] {parsed['error']}")
                             continue
 
-                        url = parsed.get("url")
-                        data = parsed.get("data")
+                        url = parsed.get("data").get("url")
+                        data = parsed.get("data").get("data")
+
                         #print(f"{url}: {data}")
 
                         if url and data:
@@ -52,13 +54,12 @@ def _read_api_stream(host, port, url):
 
 def start_api_stream(host='localhost', port=9000):
     urls = [
-            "v1/stage/message",
-            "v1/timers/current",
-            "v1/timer/video_countdown",
-            "v1/timer/system_time",
-            "v1/status/slide",
-            "v1/presentation/active"
+        "stage/message",
+        "timers/current",
+        "timer/video_countdown",
+        "timer/system_time",
+        "status/slide",
+        "presentation/active"
     ]
-    for i in urls:
-        thread = threading.Thread(target=_read_api_stream, args=(host, port, i), daemon=True)
-        thread.start()
+    thread = threading.Thread(target=_read_api_stream, args=(host, port, urls), daemon=True)
+    thread.start()
