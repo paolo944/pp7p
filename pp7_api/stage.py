@@ -1,6 +1,5 @@
 import json
 import socket
-import sys
 
 class Stage:
     def __init__(self, host, port):
@@ -24,7 +23,6 @@ class Stage:
                     s.connect((self.host, int(self.port)))
                 except Exception as e:
                     print("Impossible de se connecter:", e)
-                    sys.exit(1)
 
                 s.send(request.encode('utf-8'))
                 response = s.recv(1024)
@@ -35,7 +33,7 @@ class Stage:
                     print(f'Échec de la requête. Réponse : {response.decode("utf-8")}')
                     return False
                 else:
-                    print(f"Message envoyé au prompteur: {msg}")
+                    #print(f"Message envoyé au prompteur: {msg}")
                     return True
         except Exception as e:
             print(f'Erreur lors de l\'envoi du message: {e}')
@@ -52,7 +50,7 @@ class Stage:
                     s.connect((self.host, int(self.port)))
                 except Exception as e:
                     print("Impossible de se connecter:", e)
-                    sys.exit(1)
+
                 s.send(request.encode('utf-8'))
                 response = s.recv(1024)
 
@@ -60,7 +58,7 @@ class Stage:
                     print(f'Échec de la requête. Réponse : {response.decode("utf-8")}')
                     return False
                 else:
-                    print("Message Supprimé du prompteur")
+                    #print("Message Supprimé du prompteur")
                     return True
         except Exception as e:
             print(f'Erreur lors de la suppression du message: {e}')

@@ -47,9 +47,9 @@ def process_slide(data):
 
 url_handlers = {
     'timer/system_time': lambda data: {'prompt': data, 'sub': data, 'status': data},
-    'stage/message': lambda data: {'status': data},
+    'stage/message': lambda data: {'prompt': data, 'status': data},
     'timer/video_countdown': lambda data: {'status': data},
-    'timers/current': lambda data: {'status': data},
+    'timers/current': lambda data: {'prompt': data, 'status': data},
     'presentation/active': lambda data: {
         'status': (
             data.get("presentation", {}).get("id", {}).get("name")

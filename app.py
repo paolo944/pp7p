@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, Response, send_from_directory
 from flask_compress import Compress
 from pp7_api import stage, timer, sse_clients, dispatcher
 import json
-import requests
+import socket
 import os
 
 host = ""
@@ -87,19 +87,28 @@ def post_timer():
 
 @app.route('/api/joke', methods=['GET'])
 def joke():
-    with open('info.json', 'r') as config_file:
-        config = json.load(config_file)
-        url = f'{config["url"]}find_my_mouse'
-    print(url)
-    headers = {
-        'accept': '*/*'
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code == 204:
-        return jsonify({'result': 'True'})
-    else:
-        print(f'Échec de la requête Joke. Code de statut : {response.status_code}')
-        return jsonify({'result': 'False'})
+    request = json.dumps({
+        "url": "v1/find_my_mouse",
+        "method": "GET"
+    }, separators=(',', ':')) + "\r\n"
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.connect((host, int(port)))
+            except Exception as e:
+                print("Impossible de se connecter:", e)
+
+            s.send(request.encode('utf-8'))
+            response = s.recv(1024)
+            print(response)
+            if response:
+                return jsonify({'result': 'True'})
+            else:
+                print(f'Échec de la requête Joke. Code de statut : {response.status_code}')
+                return jsonify({'result': 'False'})
+    except Exception as e:
+            print(f'Erreur lors de l\'envoi du message: {e}')
+            return False
 
 @app.route('/api/prompt')
 def prompt_stream():
@@ -152,4 +161,4 @@ if __name__ == '__main__':
     sse_clients.start_api_stream(host, port)
     dispatcher.start_dispatcher()
 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=False)
