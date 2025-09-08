@@ -1,5 +1,6 @@
 import threading
 import json
+import time
 
 incoming_data_dict = {
             "stage/message": "",
@@ -8,7 +9,7 @@ incoming_data_dict = {
             "timer/system_time": 0,
             "status/slide": "",
             "presentation/active": ""
-            }
+}
 
 ready_data = {'prompt': {}, 'sub': {}, 'status': {}}
 
@@ -53,17 +54,20 @@ url_handlers = {
     'presentation/active': lambda data: {
         'status': (
             data.get("presentation", {}).get("id", {}).get("name")
-            if isinstance(data, dict) else None
+            if isinstance(data, dict) and data.get("presentation") is not None
+            else None
         )
-    },    
+    },
     'status/slide': process_slide,
 }
+
 
 def process_data():
     timer = 0
     while True:
         if incoming_data_dict:
             if timer == incoming_data_dict["timer/system_time"]:
+                time.sleep(0.01)  # pause pour ne pas bloquer le thread
                 continue
             timer = incoming_data_dict["timer/system_time"]
             for url, data in incoming_data_dict.items():
@@ -73,11 +77,12 @@ def process_data():
                     try:
                         processed_data = handler(parsed_data)
                         for key, value in processed_data.items():
-                            if key != None and value != None:
+                            if key is not None and value is not None:
                                 ready_data[key][url] = value
                     except Exception as e:
                         print(f"[ERROR] Handler failed for {url} with data: {parsed_data} -> {e}")
-
+        else:
+            time.sleep(0.01)
 
 def start_dispatcher():
     dispatcher_thread = threading.Thread(target=process_data)

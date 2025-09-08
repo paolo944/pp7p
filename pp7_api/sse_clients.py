@@ -11,8 +11,7 @@ def _read_api_stream(host, port, urls):
             msg = json.dumps({
                 "url": "v1/status/updates",
                 "method": "POST",
-                "body": urls,
-                "chunked": True
+                "body": urls
             }, separators=(',', ':')) + "\r\n"
 
             sock.send(msg.encode('utf-8'))

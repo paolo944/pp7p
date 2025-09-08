@@ -1,6 +1,6 @@
 import json
 import os
-import socket
+import asyncio
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -19,7 +19,6 @@ timer = timer.Timer(host, port)
 
 clients = []
 
-# --- SSE (Server-Sent Events) ---
 def make_stream(filtre_type: str):
     async def event_stream():
         client = {"filtre": filtre_type}
@@ -29,29 +28,33 @@ def make_stream(filtre_type: str):
             while True:
                 data = dispatcher.ready_data.get(filtre_type)
                 if data:
-                    if data.get("timer/system_time") == last_timer:
+                    current_timer = data.get("timer/system_time")
+                    if current_timer == last_timer:
+                        # heartbeat pour garder la connexion ouverte
                         yield ": ping\n\n"
-                        continue
-                    yield f"data: {json.dumps(data)}\n\n"
+                    else:
+                        yield f"data: {json.dumps(data)}\n\n"
+                        last_timer = current_timer
+                await asyncio.sleep(1)
         except GeneratorExit:
-            clients.remove(client)
+            if client in clients:
+                clients.remove(client)
+        except Exception as e:
+            print("Erreur dans event_stream:", e)
+            if client in clients:
+                clients.remove(client)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-# --- FastAPI app ---
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=500)
-
-PUBLIC_DIR = os.path.join(os.getcwd(), "public")
-app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="static")
-
-# --- API endpoints ---
 
 @app.put("/api/stage/msg")
 async def stage_send_msg(request: Request):
     data = await request.json()
     msg = data.get("user_input")
+    print(msg)
     result = stage.send_msg(msg)
     return {"result": result}
 
@@ -105,12 +108,16 @@ async def status_stream():
 
 # --- Static files / pages ---
 
+PUBLIC_DIR = os.path.join(os.getcwd(), "public")
+app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="public")
+
 @app.get("/")
 async def serve_index():
     return FileResponse(os.path.join(PUBLIC_DIR, "index.html"), headers={"Cache-Control": "public, max-age=604800"})
 
 @app.get("/subtitles")
 async def serve_sub():
+    print("là ?")
     return FileResponse(os.path.join(PUBLIC_DIR, "subtitles.html"), headers={"Cache-Control": "public, max-age=604800"})
 
 @app.get("/prompt")
@@ -121,13 +128,12 @@ async def serve_prompt():
 async def serve_static(path: str):
     return FileResponse(os.path.join(PUBLIC_DIR, path), headers={"Cache-Control": "public, max-age=604800"})
 
-# --- Error handler ---
 @app.exception_handler(400)
 async def bad_request_handler(request: Request, exc):
     return {"message": "Bad request"}
 
-# --- Startup events ---
 @app.on_event("startup")
 async def startup_event():
+    print("startup lancé")
     sse_clients.start_api_stream(host, port)
     dispatcher.start_dispatcher()

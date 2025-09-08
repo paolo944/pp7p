@@ -4,3 +4,5 @@ requests>=2.32.3
 Flask-Compress
 pyjwt[crypto]
 webauthn
+uvicorn
+watchdog
