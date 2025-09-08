@@ -1,7 +1,6 @@
-Flask>=2.3.3
+fastapi
 json5>=0.9.25
 requests>=2.32.3
 Flask-Compress
 pyjwt[crypto]
-re
 webauthn

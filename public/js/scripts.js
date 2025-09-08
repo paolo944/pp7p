@@ -287,13 +287,6 @@ document.getElementById('toggle-editor-mode').addEventListener('click', () => {
     editor_mode = !editor_mode;
 });
 
-document.getElementById('joke').addEventListener('click', () => {
-    fetchWithLoader(`/api/joke`, { method: 'GET' })
-    .then(res => res.json())
-    .then(() => alert('Very funny!'))
-    .catch(() => console.error('your joke didn\'t work'));
-});
-
 function changeLanguageToEnglish() {
     document.querySelector('h1').textContent = 'Client PP7 Hillsong Paris';
     document.getElementById('user-stage-msg').placeholder = 'Send prompt message';
