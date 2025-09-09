@@ -1,60 +1,57 @@
 import json
 import os
 import asyncio
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.gzip import GZipMiddleware
 from pp7_api import stage, timer, sse_clients, dispatcher
+from contextlib import asynccontextmanager
+import uvicorn
 
-# Charger config
-with open('info.json', 'r') as config_file:
+with open("info.json", "r") as config_file:
     config = json.load(config_file)
     host = config["host"]
     port = int(config["port"])
 
-# Init objets
 stage = stage.Stage(host, port)
 timer = timer.Timer(host, port)
 
-clients = []
+queues = {
+    "prompt": asyncio.Queue(),
+    "sub": asyncio.Queue(),
+    "status": asyncio.Queue(),
+}
 
 def make_stream(filtre_type: str):
     async def event_stream():
-        client = {"filtre": filtre_type}
-        clients.append(client)
-        last_timer = 0
         try:
             while True:
-                data = dispatcher.ready_data.get(filtre_type)
-                if data:
-                    current_timer = data.get("timer/system_time")
-                    if current_timer == last_timer:
-                        # heartbeat pour garder la connexion ouverte
-                        yield ": ping\n\n"
-                    else:
-                        yield f"data: {json.dumps(data)}\n\n"
-                        last_timer = current_timer
-                await asyncio.sleep(0.01)
-        except GeneratorExit:
-            if client in clients:
-                clients.remove(client)
-        except Exception as e:
-            print("Erreur dans event_stream:", e)
-            if client in clients:
-                clients.remove(client)
+                data = await queues[filtre_type].get()
+                yield f"data: {json.dumps(data)}\n\n"
+        except asyncio.CancelledError:
+            print(f"Stream {filtre_type} fermé")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("App starting...")
 
-app = FastAPI()
+    loop = asyncio.get_running_loop()   # ✅ récupère la boucle principale
+    sse_clients.start_api_stream(host, port)
+    dispatcher.start_dispatcher(queues, loop)  # on passe la loop
+
+    yield
+    print("App shutting down")
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 @app.put("/api/stage/msg")
 async def stage_send_msg(request: Request):
     data = await request.json()
     msg = data.get("user_input")
-    print(msg)
     result = stage.send_msg(msg)
     return {"result": result}
 
@@ -106,8 +103,6 @@ async def sub_stream():
 async def status_stream():
     return make_stream("status")
 
-# --- Static files / pages ---
-
 PUBLIC_DIR = os.path.join(os.getcwd(), "public")
 app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="public")
 
@@ -117,7 +112,6 @@ async def serve_index():
 
 @app.get("/subtitles")
 async def serve_sub():
-    print("là ?")
     return FileResponse(os.path.join(PUBLIC_DIR, "subtitles.html"), headers={"Cache-Control": "public, max-age=604800"})
 
 @app.get("/prompt")
@@ -132,8 +126,5 @@ async def serve_static(path: str):
 async def bad_request_handler(request: Request, exc):
     return {"message": "Bad request"}
 
-@app.on_event("startup")
-async def startup_event():
-    print("startup lancé")
-    sse_clients.start_api_stream(host, port)
-    dispatcher.start_dispatcher()
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=5000, workers=1)
