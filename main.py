@@ -35,7 +35,7 @@ def make_stream(filtre_type: str):
                     else:
                         yield f"data: {json.dumps(data)}\n\n"
                         last_timer = current_timer
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.01)
         except GeneratorExit:
             if client in clients:
                 clients.remove(client)
