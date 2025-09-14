@@ -31,7 +31,8 @@ def process_slide(data):
     data_final["type"] = "versets" if any(char.isdigit() for char in text) else "louanges"
     
     if data_final["type"] == "louanges":
-        paroles = text.split("\n")
+        paroles = text.splitlines()
+        print(text)
         paroles = [paroles[i] for i in range(0, len(paroles), 2)]
         data_final["subtitle"] = "\n".join(paroles)
     elif data_final["type"] == "versets":
@@ -76,7 +77,7 @@ def process_data(queues: dict, loop):
                         for key, value in processed_data.items():
                             if key in queues and value is not None:
                                 asyncio.run_coroutine_threadsafe(
-                                    queues[key].put({url: value}), loop  # ✅ utiliser loop du main
+                                    queues[key].put({url: value}), loop
                                 )
                     except Exception as e:
                         print(f"[ERROR] Handler failed for {url} with data: {parsed_data} -> {e}")

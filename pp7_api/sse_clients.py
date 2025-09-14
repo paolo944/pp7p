@@ -20,7 +20,7 @@ def _read_api_stream(host, port, urls):
             decoder = codecs.getincrementaldecoder("utf-8")()
 
             while True:
-                raw_chunk = sock.recv(1024).decode('utf-8')
+                raw_chunk = sock.recv(1024)
                 if not raw_chunk:
                     break
 

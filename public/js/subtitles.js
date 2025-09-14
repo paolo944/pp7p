@@ -27,7 +27,6 @@ function setupSubEventSource() {
 
 function handleSubSlideData(slide) {
     const subtitleElement = document.getElementById("subtitle");
-    subtitleElement.innerHTML = "";
 
     if (!slide || !slide.type) {
         console.warn("Aucun slide valide:", slide);
@@ -35,26 +34,29 @@ function handleSubSlideData(slide) {
     }
 
     if (slide.type === "louanges") {
-        document.body.classList.remove('light-mode');
+        document.body.classList.remove("light-mode");
         subtitleElement.classList.add("louanges");
 
-        const louanges = document.createElement('p');
-        louanges.textContent = slide.subtitle;
-        subtitleElement.appendChild(louanges);
+        const newHtml = `<p>${slide.subtitle.replace(/\n|\r\n?/g, "<br>")}</p>`;
+
+        // ✅ update only if different
+        if (subtitleElement.innerHTML !== newHtml) {
+            subtitleElement.innerHTML = newHtml;
+        }
 
     } else if (slide.type === "versets") {
-        document.body.classList.add('light-mode');
+        document.body.classList.add("light-mode");
         subtitleElement.classList.remove("louanges");
 
-        const versetsContainer = document.createElement('p');
-        versetsContainer.textContent = slide.versets;
+        const newHtml = `
+            <p>${slide.versets}</p>
+            <p class="refs">${slide.ref}</p>
+        `;
 
-        const refContainer = document.createElement('p');
-        refContainer.classList.add('refs');
-        refContainer.textContent = slide.ref;
-
-        subtitleElement.appendChild(versetsContainer);
-        subtitleElement.appendChild(refContainer);
+        // ✅ update only if different
+        if (subtitleElement.innerHTML !== newHtml) {
+            subtitleElement.innerHTML = newHtml;
+        }
 
     } else {
         console.warn("Type de slide non reconnu:", slide.type);

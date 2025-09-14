@@ -15,10 +15,12 @@ body.light-mode {
     align-items: center;
     display: flex;
     justify-content: center;
+    text-align: center;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
 .louanges p {
+    display: block;
     font-size: 80px;
 }
 
