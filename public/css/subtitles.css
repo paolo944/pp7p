@@ -1,14 +1,14 @@
 body {
     background: transparent;
     color: #fff;
-    font-family: 'Work Sans', sans-serif;
+    font-family: Work Sans, sans-serif;
     height: 100vh;
     overflow: hidden;
 }
 
 body.light-mode {
-    background-color: #ffffff;
-    color: #000000;
+    background-color: #fff;
+    color: #000;
 }
 
 .louanges {
@@ -18,14 +18,14 @@ body.light-mode {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
-.louanges p{
-    font-size: 3em;
+.louanges p {
+    font-size: 80px;
 }
 
 p {
     align-items: center;
     display: flex;
-    font-size: 3em;
+    font-size: 60px;
     padding-left: 20px;
 }
 
