@@ -1,9 +1,9 @@
 body {
     background: transparent;
-    color: white;
+    color: #fff;
+    font-family: 'Work Sans', sans-serif;
     height: 100vh;
     overflow: hidden;
-    font-family: 'Work Sans', sans-serif;
 }
 
 body.light-mode {
@@ -12,21 +12,21 @@ body.light-mode {
 }
 
 .louanges {
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-    display: flex;
     align-items: center;
+    display: flex;
     justify-content: center;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
 }
 
 .louanges p{
-    font-size: 45px;
+    font-size: 3em;
 }
 
 p {
-    padding-left: 20px;
-    font-size: 32px;
-    display: flex;
     align-items: center;
+    display: flex;
+    font-size: 3em;
+    padding-left: 20px;
 }
 
 .refs {
