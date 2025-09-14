@@ -1,6 +1,7 @@
 import threading
 import socket
 import json
+import codecs
 from .dispatcher import incoming_data_dict
 
 def _read_api_stream(host, port, urls):
@@ -15,11 +16,15 @@ def _read_api_stream(host, port, urls):
             }, separators=(',', ':')) + "\r\n"
 
             sock.send(msg.encode('utf-8'))
+
+            decoder = codecs.getincrementaldecoder("utf-8")()
+
             while True:
-                chunk = sock.recv(1024).decode('utf-8')
-                if not chunk:
+                raw_chunk = sock.recv(1024).decode('utf-8')
+                if not raw_chunk:
                     break
 
+                chunk = decoder.decode(raw_chunk)
                 buffer += chunk
 
                 while '\n' in buffer:
