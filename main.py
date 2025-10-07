@@ -8,11 +8,19 @@ from fastapi.middleware.gzip import GZipMiddleware
 from pp7_api import sse_clients, dispatcher
 from contextlib import asynccontextmanager
 import uvicorn
+import socket
 
 with open("info.json", "r") as config_file:
     config = json.load(config_file)
     host = config["host"]
     port = int(config["port"])
+
+def get_ip_local():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect(("8.8.8.8", 80))
+    ip = s.getsockname()[0]
+    s.close()
+    return ip
 
 queues = asyncio.Queue()
 
@@ -61,4 +69,6 @@ async def bad_request_handler(request: Request, exc):
     return {"message": "Bad request"}
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=60000, workers=1)
+    ip = get_ip_local()
+    print(f"IP locale: {ip}")
+    uvicorn.run("main:app", port=60000, workers=1)
