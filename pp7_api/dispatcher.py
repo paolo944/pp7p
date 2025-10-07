@@ -52,11 +52,9 @@ def process_data(queues, loop):
             parsed_data = safe_parse(incoming_data_dict["status/slide"])
             try:
                 processed_data = process_slide(parsed_data)
-                for key, value in processed_data.items():
-                    if key in queues and value is not None:
-                        asyncio.run_coroutine_threadsafe(
-                            queues.put({"status/slide": value}), loop
-                        )
+                asyncio.run_coroutine_threadsafe(
+                    queues.put({"status/slide": processed_data}), loop
+                )
             except Exception as e:
                 print(f"[ERROR] Handler failed for status/slide with data: {parsed_data} -> {e}")
         else:
