@@ -4,12 +4,8 @@ import time
 import asyncio
 
 incoming_data_dict = {
-    "stage/message": "",
-    "timers/current": "",
-    "timer/video_countdown": "",
     "timer/system_time": 0,
-    "status/slide": "",
-    "presentation/active": "",
+    "status/slide": ""
 }
 
 def safe_parse(data):
@@ -34,6 +30,8 @@ def process_slide(data):
         paroles = text.splitlines()
         print(text)
         paroles = [paroles[i] for i in range(0, len(paroles), 2)]
+        if len(paroles) > 2:
+            return ""
         data_final["subtitle"] = "\n".join(paroles)
     elif data_final["type"] == "versets":
         text = text.split("\r")
@@ -42,24 +40,9 @@ def process_slide(data):
         data_final["ref"] = ref
         data_final["versets"] = versets
     
-    return {"prompt": data_final, "sub": data_final, "status": data_final}
+    return data_final
 
-url_handlers = {
-    "timer/system_time": lambda data: {"prompt": data, "sub": data, "status": data},
-    "stage/message": lambda data: {"prompt": data, "status": data},
-    "timer/video_countdown": lambda data: {"status": data},
-    "timers/current": lambda data: {"prompt": data, "status": data},
-    "presentation/active": lambda data: {
-        "status": (
-            data.get("presentation", {}).get("id", {}).get("name")
-            if isinstance(data, dict) and data.get("presentation") is not None
-            else None
-        )
-    },
-    "status/slide": process_slide,
-}
-
-def process_data(queues: dict, loop):
+def process_data(queues, loop):
     timer_val = 0
     while True:
         if incoming_data_dict:
@@ -68,19 +51,16 @@ def process_data(queues: dict, loop):
                 continue
             timer_val = incoming_data_dict["timer/system_time"]
 
-            for url, data in incoming_data_dict.items():
-                parsed_data = safe_parse(data)
-                handler = url_handlers.get(url)
-                if handler:
-                    try:
-                        processed_data = handler(parsed_data)
-                        for key, value in processed_data.items():
-                            if key in queues and value is not None:
-                                asyncio.run_coroutine_threadsafe(
-                                    queues[key].put({url: value}), loop
-                                )
-                    except Exception as e:
-                        print(f"[ERROR] Handler failed for {url} with data: {parsed_data} -> {e}")
+            parsed_data = safe_parse(incoming_data_dict["status/slide"])
+            try:
+                processed_data = process_slide(parsed_data)
+                for key, value in processed_data.items():
+                    if key in queues and value is not None:
+                        asyncio.run_coroutine_threadsafe(
+                            queues.put({"status/slide": value}), loop
+                        )
+            except Exception as e:
+                print(f"[ERROR] Handler failed for status/slide with data: {parsed_data} -> {e}")
         else:
             time.sleep(0.01)
 

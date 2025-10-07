@@ -58,12 +58,8 @@ def _read_api_stream(host, port, urls):
 
 def start_api_stream(host='localhost', port=9000):
     urls = [
-        "stage/message",
-        "timers/current",
-        "timer/video_countdown",
         "timer/system_time",
-        "status/slide",
-        "presentation/active"
+        "status/slide"
     ]
     thread = threading.Thread(target=_read_api_stream, args=(host, port, urls), daemon=True)
     thread.start()
