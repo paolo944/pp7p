@@ -25,16 +25,14 @@ def process_slide(data):
     text = data["current"]["text"]
     data_final = {}
     data_final["type"] = "versets" if any(char.isdigit() for char in text) else "louanges"
-    
+    text = text.splitlines()
+
     if data_final["type"] == "louanges":
-        paroles = text.splitlines()
-        print(text)
-        paroles = [paroles[i] for i in range(0, len(paroles), 2)]
+        paroles = [text[i] for i in range(0, len(text), 2)]
         if len(paroles) > 2:
             return ""
         data_final["subtitle"] = "\n".join(paroles)
     elif data_final["type"] == "versets":
-        text = text.split("\r")
         ref = text[-1]
         versets = text[0]
         data_final["ref"] = ref
