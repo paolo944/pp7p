@@ -2,6 +2,7 @@ import threading
 import json
 import time
 import asyncio
+import re
 
 incoming_data_dict = {
     "timer/system_time": 0,
@@ -24,13 +25,14 @@ def safe_parse(data):
 def process_slide(data):
     text = data["current"]["text"]
     data_final = {}
-    data_final["type"] = "versets" if any(char.isdigit() for char in text) else "louanges"
+    data_final["type"] = "versets" if re.search(r'\d+:\d+', text) else "louanges"
     text = text.splitlines()
+
+    if len(text) > 4:
+        return ""
 
     if data_final["type"] == "louanges":
         paroles = [text[i] for i in range(0, len(text), 2)]
-        if len(paroles) > 2:
-            return ""
         data_final["subtitle"] = "\n".join(paroles)
     elif data_final["type"] == "versets":
         ref = text[-1]
