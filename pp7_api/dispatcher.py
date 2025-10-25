@@ -25,7 +25,7 @@ def safe_parse(data):
 def process_slide(data):
     text = data["current"]["text"]
     data_final = {}
-    data_final["type"] = "versets" if re.search(r'\d+:\d+', text) else "louanges"
+    data_final["type"] = "versets" if re.search(r'\b\d{1,3}:\d{1,3}', text) else "louanges"
     text = text.splitlines()
 
     if len(text) > 4:
