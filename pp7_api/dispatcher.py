@@ -6,8 +6,16 @@ import re
 
 incoming_data_dict = {
     "timer/system_time": 0,
-    "status/slide": ""
+    "status/slide": "",
+    "media/playlist/active": ""
 }
+
+media_playing = False
+playing_media_name = ""
+
+# How to play video to declink: ffmpeg -i test.avi -f decklink -pix_fmt uyvy422 'DeckLink Mini Monitor'
+# How to stream an image: ffmpeg -loop 1 -re -i input.jpg -f decklink -pix_fmt uyvy422 -s 1920x1080 -r 25 "DeckLink Duo (1)"
+# To stream on the screen: SDL_VIDEO_FULLSCREEN_DISPLAY=1 ffplay -loop 1 -framerate 25 -i input.jpg -fs -noborder
 
 def safe_parse(data):
     if isinstance(data, str):
@@ -42,7 +50,7 @@ def process_slide(data):
     
     return data_final
 
-def process_data(queues, loop):
+def process_data(queues, loop, media):
     timer_val = 0
     while True:
         if incoming_data_dict:
@@ -59,13 +67,21 @@ def process_data(queues, loop):
                 )
             except Exception as e:
                 print(f"[ERROR] Handler failed for status/slide with data: {parsed_data} -> {e}")
+
+            # for lookup in media:
+            #     if lookup["lookUp"] == incoming_data_dict["media/playlist/active"]["item"]["name"]:
+            #         if media_playing:
+            #             continue
+            #         else:
+            #             #Jouer media avec ffmpeg
+                
         else:
             time.sleep(0.01)
 
 
-def start_dispatcher(queues: dict, loop):
+def start_dispatcher(queues: dict, loop, media):
     dispatcher_thread = threading.Thread(
-        target=process_data, args=(queues, loop)
+        target=process_data, args=(queues, loop, media)
     )
     dispatcher_thread.daemon = True
     dispatcher_thread.start()

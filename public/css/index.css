@@ -17,7 +17,8 @@ body.light-mode {
     display: flex;
     justify-content: center;
     text-align: center;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    background-color: black;
+    padding: 5px;
 }
 
 .louanges p {

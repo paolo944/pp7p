@@ -14,6 +14,8 @@ with open("info.json", "r") as config_file:
     config = json.load(config_file)
     host = config["host"]
     port = int(config["port"])
+    media = config["media"]
+    declink_device = config["declink_device"]
 
 def get_ip_local():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -41,7 +43,7 @@ async def lifespan(app: FastAPI):
 
     loop = asyncio.get_running_loop()
     sse_clients.start_api_stream(host, port)
-    dispatcher.start_dispatcher(queues, loop)
+    dispatcher.start_dispatcher(queues, loop, media)
 
     yield
     print("App shutting down")
